@@ -10,9 +10,8 @@ public class Channel extends baseEntity {
     private List<Message> messages;
 
     public Channel(String channelName) {
+        super();
         this.channelId = UUID.randomUUID();
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = this.createdAt;
         this.channelName = channelName;
         messages = new ArrayList<Message>();
         users = new ArrayList<User>();

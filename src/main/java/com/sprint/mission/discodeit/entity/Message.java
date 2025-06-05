@@ -11,10 +11,9 @@ public class Message extends baseEntity {
     //작성자가 탈퇴한 경우 메세지의 작성자는 deletedUser로 바뀐다.
 
     public Message(String messageBody,User user,Channel channel) {
+        super();
         this.messageId = UUID.randomUUID();
         this.messageBody = messageBody;
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = createdAt;
         this.user = user;
         this.channel = channel;
     }

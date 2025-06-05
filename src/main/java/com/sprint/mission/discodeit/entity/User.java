@@ -18,9 +18,8 @@ public class User extends baseEntity{
     private Status status;
 
     public User(String userName) {
+        super();
         this.userId =UUID.randomUUID();
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = this.createdAt;
         this.userName = userName;
         this.status = status.ACTIVE;
         this.channels = new ArrayList<>();
