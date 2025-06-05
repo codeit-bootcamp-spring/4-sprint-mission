@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.14'
+}
+
+group = 'com.sprint.misson'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+application {
+    mainClass = 'com.sprint.mission.discodeit.GUI.SelectUserGUI'
+
+}
+
+javafx {
+    version = "21.0.1" // 사용 중인 JavaFX SDK 버전에 맞게 조정
+    modules = [ 'javafx.controls', 'javafx.fxml' ] // 필요한 모듈만 적으면 됨
+}
+
+test {
+    useJUnitPlatform()
+}
