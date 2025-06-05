@@ -20,6 +20,7 @@ public class JCFChannelService implements ChannelService  {
     private static JCFChannelService instance;
     private final List<Channel> data;
     private final JCFMessageService messageService;
+    //채널 삭제시 메세지도 같이 삭제되기 때문에 사용
 
     private JCFChannelService(){
         data = new ArrayList<>();
@@ -55,6 +56,8 @@ public class JCFChannelService implements ChannelService  {
         //반복문 도중 리스트를 직접 수정하면 ConcurrentModificationException이 발생. 복사본 사용
         for (Message message : messagesCopy) {
             messageService.deleteMessage(message.getMessageId());
+            //채널이 삭제되면 채널 내 메세지도 전부 삭제된다
+            //복사본 순회하며 삭제하는 채널 내 메세지 삭제
         }
         for (User user : new ArrayList<>(toDelete.getUsers())) {
             user.removeChannel(toDelete);
@@ -111,7 +114,7 @@ public class JCFChannelService implements ChannelService  {
             System.out.println("잘못된 입력입니다.");
             return null;
         }
-
+        //채널이 실존하고 새로운 채널명이 공백이 아닐경우 채널 이름 업데이트
         Channel channel = findChannelById(channelId);
         channel.updateChannelName(updateChannelName);
         channel.newUpdatedAt();

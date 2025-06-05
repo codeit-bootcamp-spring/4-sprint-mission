@@ -173,7 +173,10 @@ public class JCFUserService implements UserService {
         User user = findUserById(userId);
 
         if(status == User.Status.DELETED) {
-            deleteUser(user.getUserId());
+            System.out.println("상태 변경에서는 회원 탈퇴를 할 수 없습니다.");
+            //회원 탈퇴는 deleteUser에서만 가능
+            return;
+
         }
         else
             user.setStatus(status);

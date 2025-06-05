@@ -62,7 +62,7 @@ public class JCFMessageService implements MessageService {
         Message deletedMessage = findMessageById(messageId);
         deletedMessage.getUser().removeMessage(deletedMessage);
         deletedMessage.getChannel().removeMessage(deletedMessage);
-        //채널과 유저에서 삭제할 메세지 제거
+        //채널과 유저에서 해당 메세지 제거
         data.remove(deletedMessage);
         return true;
     }
