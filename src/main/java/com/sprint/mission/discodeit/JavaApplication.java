@@ -3,14 +3,20 @@ package com.sprint.mission.discodeit;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.repository.ChannelRepository;
+import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.repository.factory.FileRepositoryFactory;
+import com.sprint.mission.discodeit.repository.factory.JCFRepositoryFactory;
+import com.sprint.mission.discodeit.repository.factory.RepositoryFactory;
+import com.sprint.mission.discodeit.repository.jcf.JCFUserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 
-import com.sprint.mission.discodeit.service.JCF.JCFChannelService;
-import com.sprint.mission.discodeit.service.JCF.JCFMessageService;
-import com.sprint.mission.discodeit.service.JCF.JCFUserService;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
+import com.sprint.mission.discodeit.service.factory.FileServiceFactory;
 import com.sprint.mission.discodeit.service.factory.JCFServiceFactory;
+import com.sprint.mission.discodeit.service.factory.ServiceFactory;
 
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -19,7 +25,12 @@ public class JavaApplication {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
 
-        JCFServiceFactory factory = new JCFServiceFactory();
+        RepositoryFactory fileRepositoryFactory = new FileRepositoryFactory();
+        UserRepository userRepository = fileRepositoryFactory.CreateUserRepository();
+        MessageRepository messageRepository = fileRepositoryFactory.CreateMessageRepository();
+        ChannelRepository channelRepository = fileRepositoryFactory.CreateChannelRepository();
+
+        ServiceFactory factory = new FileServiceFactory();
         UserService userService = factory.createUserService();
         MessageService messageService = factory.createMessageService();
         ChannelService channelService = factory.createChannelService();
@@ -98,7 +109,7 @@ public class JavaApplication {
 
             System.out.println();
             System.out.println("----\"채널 1\"에서 \"김첨지\"를 강퇴시킨 후 채널의 모든 유저 및 메세지 출력----");
-            channelService.KickUser(channelService.findChannelByName("채널 1").get(0).getChannelId(),userService.findUserByName("김첨지").get(0));
+            channelService.kickUser(channelService.findChannelByName("채널 1").get(0).getChannelId(),userService.findUserByName("김첨지").get(0));
             for (User u : testChannel.getUsers()) {
                 userService.showUserInfo(u);
                 //채널 1에 있는 모든 유저 출력

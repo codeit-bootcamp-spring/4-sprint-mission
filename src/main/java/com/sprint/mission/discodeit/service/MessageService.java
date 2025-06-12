@@ -4,6 +4,7 @@ import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface MessageService {
@@ -17,7 +18,7 @@ public interface MessageService {
     Message fixMessage(UUID messageId,String newBody);
     //메세지 내용 수정
 
-    Message findMessageById(UUID messageId);
+    Optional<Message> findMessageById(UUID messageId);
     //Id로 메세지 반환
 
     List<Message> findMessageByBody(String messageBody);

@@ -4,6 +4,7 @@ import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ChannelService {
@@ -16,7 +17,7 @@ public interface ChannelService {
     void showChannelInfo(Channel channel);
     //선택한 채널 정보 출력
 
-    Channel findChannelById(UUID channelId);
+    Optional<Channel> findChannelById(UUID channelId);
     //channelId로 채널 반환
 
     List<Channel> findChannelByName(String channelName);
@@ -28,7 +29,7 @@ public interface ChannelService {
     List<User> getUserList(UUID channelId);
     //채널 내 모든 유저 리스트 조회
 
-    boolean KickUser(UUID channelId, User user);
+    boolean kickUser(UUID channelId, User user);
     //채널 내 유저 강퇴
 
     List<Message> getMessageList(UUID channelId);

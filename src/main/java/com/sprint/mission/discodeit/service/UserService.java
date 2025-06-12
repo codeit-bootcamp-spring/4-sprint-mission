@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
@@ -17,7 +18,7 @@ public interface UserService {
     void showUserInfo(User user);
     //선택한 유저 출력
 
-    User findUserById(UUID userId);
+    Optional<User> findUserById(UUID userId);
     //userId로 유저 반환
 
     List<User> findUserByName(String userName);
