@@ -6,56 +6,48 @@ import com.sprint.mission.discodeit.service.UserService;
 import java.util.*;
 
 public class JCFuserService implements UserService {
-    private final Set<User> data;
+    private final Map<String, User> data;
+    private static JCFuserService instance = new JCFuserService();
 
-    public JCFuserService() {
-        this.data = new HashSet<>();
+    private JCFuserService() {
+        this.data = new HashMap<>();
+    }
+
+
+    public static JCFuserService getInstance() {
+        return instance;
     }
 
 
     @Override
-    public User createUser(String username, String email, String phone) {
-        User user = new User(username, email, phone);
-        data.add(user);
+    public User createUser(User user) {
+        data.put(user.getUserId(), user);
         return user;
     }
 
     @Override
     public User getUserById(String userId) {
-        for (User user : data) {
-            if (user.getUserId().equals(userId)) {
-                return user;
-            }
-        } return null;
+        return data.get(userId);
     }
 
     @Override
-    public Set<User> getAllUsers() {
-        return new HashSet<>(data);
+    public List<User> getAllUsers() {
+        return new ArrayList<>(data.values());
     }
 
     @Override
     public User updateUser(String userId, String newUsername, String newEmail, String newPhone) {
-        for (User user : data) {
-            if (user.getUserId().equals(userId)) {
-                user.setUsername(newUsername);
-                user.setEmail(newEmail);
-                user.setPhone(newPhone);
-                user.setUpdatedAt(System.currentTimeMillis());
-
-                return user;
-            }
+        User user = data.get(userId);
+        if (user != null) {
+            user.setUsername(newUsername);
+            user.setEmail(newEmail);
+            user.setPhone(newPhone);
+            user.setUpdatedAt(System.currentTimeMillis());
         }
-        return null;
+        return user;
     }
 
     public User deleteUser(String userId) {
-        for (User user : data) {
-            if (user.getUserId().equals(userId)) {
-                data.remove(user);
-                return user;
-            }
-        }
-        return null;
+        return data.remove(userId);
     }
 }

@@ -1,8 +1,9 @@
 package com.sprint.mission.discodeit.entity;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class User extends BaseEntity {
+public class User extends BaseEntity implements Serializable {
 
     private final String userId;
     private String username;
@@ -10,10 +11,22 @@ public class User extends BaseEntity {
     private String phone;
     private Set<Channel> channels;
     private List<Message> messages;
+    private static final long serialVersionUID = 1L;
 
     public User(String username, String email, String phone) {
         super();
         this.userId = UUID.randomUUID().toString();
+        this.username = username;
+        this.email = email;
+        this.phone = phone;
+        this.messages = new ArrayList<>();
+        this.channels = new HashSet<>();
+
+    }
+
+    public User(String userId, String username, String email, String phone, long createdAt, long updatedAt) {
+        super(createdAt, updatedAt);
+        this.userId = userId;
         this.username = username;
         this.email = email;
         this.phone = phone;
@@ -73,5 +86,32 @@ public class User extends BaseEntity {
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';
+    }
+
+    public String toCSV() {
+        return String.join(",",
+                userId,
+                username,
+                email,
+                phone,
+                String.valueOf(createdAt),
+                String.valueOf(updatedAt)
+        );
+    }
+
+    public static User fromCSV(String line) {
+        String[] split = line.split(",");
+        if (split.length < 6) {
+            return null;
+        } else {
+            String userId = split[0];
+            String username = split[1];
+            String email = split[2];
+            String phone = split[3];
+            long createdAt = Long.parseLong(split[4]);
+            long updatedAt = Long.parseLong(split[5]);
+
+            return new User(userId,username, email, phone, createdAt, updatedAt);
+        }
     }
 }

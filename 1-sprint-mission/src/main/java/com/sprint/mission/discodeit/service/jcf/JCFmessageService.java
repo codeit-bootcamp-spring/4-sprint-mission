@@ -10,15 +10,21 @@ import java.util.*;
 public class JCFmessageService implements MessageService {
 
     private final List<Message> data;
+    private static final JCFmessageService instance = new JCFmessageService();
 
-    public JCFmessageService() {
+    private JCFmessageService() {
         this.data = new ArrayList<>();
+    }
+
+    public static JCFmessageService getInstance() {
+        return instance;
     }
 
     @Override
     public Message sendMessage(User user, Channel channel, String content) {
         Message message = new Message(user, channel, content);
         data.add(message);
+        channel.addMessage(message);
         message.setUser(user);
         message.setChannel(channel);
 
@@ -26,12 +32,12 @@ public class JCFmessageService implements MessageService {
     }
 
     @Override
-    public List<Message> getMessages() {
+    public List<Message> getMessages(User user, Channel channel) {
         return new ArrayList<>(data);
     }
 
     @Override
-    public Message getMessageById(String messageId) {
+    public Message getMessageById(String messageId, User user, Channel channel) {
         for (Message message : data) {
             if (message.getMessageId().equals(messageId)) {
                 return message;
@@ -61,6 +67,20 @@ public class JCFmessageService implements MessageService {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<Message> deleteMessagesByChannelId(String channelId) {
+        List<Message> deletedmessages = new ArrayList<>();
+        for (Message message : data) {
+            if (message.getChannel().getChannelId().equals(channelId)) {
+                deletedmessages.add(message);
+            }
+        }
+
+        data.removeIf(message -> message.getChannel().getChannelId().equals(channelId));
+
+        return deletedmessages;
     }
 }
 

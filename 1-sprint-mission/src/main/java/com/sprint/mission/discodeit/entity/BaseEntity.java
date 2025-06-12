@@ -5,9 +5,13 @@ public abstract class BaseEntity {
     protected Long updatedAt;
 
     public BaseEntity() {
-        long now = System.currentTimeMillis();
-        this.createdAt = now;
-        this.updatedAt = now;
+        this.createdAt = System.currentTimeMillis();
+        this.updatedAt = this.createdAt;
+    }
+
+    public BaseEntity(Long createdAt, Long updatedAt) {
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getCreatedAt() {
