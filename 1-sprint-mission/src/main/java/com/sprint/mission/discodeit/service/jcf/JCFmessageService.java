@@ -3,17 +3,20 @@ package com.sprint.mission.discodeit.service.jcf;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.jcf.JCFMessageRepository;
 import com.sprint.mission.discodeit.service.MessageService;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class JCFmessageService implements MessageService {
 
-    private final List<Message> data;
     private static final JCFmessageService instance = new JCFmessageService();
+    private final MessageRepository messageRepository;
 
     private JCFmessageService() {
-        this.data = new ArrayList<>();
+        this.messageRepository = new JCFMessageRepository();
     }
 
     public static JCFmessageService getInstance() {
@@ -23,64 +26,58 @@ public class JCFmessageService implements MessageService {
     @Override
     public Message sendMessage(User user, Channel channel, String content) {
         Message message = new Message(user, channel, content);
-        data.add(message);
         channel.addMessage(message);
         message.setUser(user);
         message.setChannel(channel);
 
-        return message;
+        return messageRepository.save(message);
     }
 
     @Override
     public List<Message> getMessages(User user, Channel channel) {
-        return new ArrayList<>(data);
+        return messageRepository.findAll().stream()
+                .filter(message -> (user == null || message.getUser().getUserId().equals(user.getUserId())) &&
+                        (channel == null || message.getChannel().getChannelId().equals(channel.getChannelId())))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Message getMessageById(String messageId, User user, Channel channel) {
-        for (Message message : data) {
-            if (message.getMessageId().equals(messageId)) {
-                return message;
-            }
-        } return null;
+        Message message = messageRepository.findById(messageId, user, channel );
+
+        if (message == null) {
+            return null;
+        } else {
+            boolean userMatches = user == null || message.getUser().getUserId().equals(user.getUserId());
+            boolean channelMatches = channel == null || message.getChannel().getChannelId().equals(channel.getChannelId());
+
+            return (userMatches && channelMatches) ? message : null;
+        }
     }
 
     @Override
     public Message updateMessage(String messageId, String newContent) {
-        for (Message message : data) {
-            if (message.getMessageId().equals(messageId)) {
-                message.setContent(newContent);
-                message.setUpdatedAt(System.currentTimeMillis());
 
-                return message;
-            }
+        Message message = messageRepository.findById(messageId, null, null);
+        if (message != null) {
+            message.setContent(newContent);
+            message.setUpdatedAt(System.currentTimeMillis());
+
+            messageRepository.delete(messageId);
+            return messageRepository.save(message);
+        } else {
+            throw new IllegalArgumentException("Message not found");
         }
-        return null;
     }
 
     @Override
     public Message deleteMessage(String messageId) {
-        for (Message message : data) {
-            if (message.getMessageId().equals(messageId)) {
-                data.remove(message);
-                return message;
-            }
-        }
-        return null;
+        return messageRepository.delete(messageId);
     }
 
     @Override
     public List<Message> deleteMessagesByChannelId(String channelId) {
-        List<Message> deletedmessages = new ArrayList<>();
-        for (Message message : data) {
-            if (message.getChannel().getChannelId().equals(channelId)) {
-                deletedmessages.add(message);
-            }
-        }
-
-        data.removeIf(message -> message.getChannel().getChannelId().equals(channelId));
-
-        return deletedmessages;
+        return messageRepository.deleteByChannelId(channelId);
     }
 }
 

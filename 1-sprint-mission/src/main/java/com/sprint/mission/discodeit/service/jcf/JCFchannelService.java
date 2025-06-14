@@ -1,16 +1,19 @@
 package com.sprint.mission.discodeit.service.jcf;
 
 import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.repository.jcf.JCFChannelRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 
 import java.util.*;
 
 public class JCFchannelService implements ChannelService {
-    private final Map<String, Channel> data;
+
+    private final JCFChannelRepository repository;
+
     private static final JCFchannelService instance = new JCFchannelService();
 
     private JCFchannelService() {
-        this.data = new HashMap<>();
+        this.repository = JCFChannelRepository.getInstance();
     }
 
     public static JCFchannelService getInstance() {
@@ -20,44 +23,38 @@ public class JCFchannelService implements ChannelService {
 
     @Override
     public Channel createChannel(Channel channel) {
-        data.put(channel.getChannelId(), channel);
-        return channel;
+        return repository.save(channel);
     }
 
     @Override
     public Channel getChannelById(String channelId) {
-        if (!data.containsKey(channelId)) {
-            throw new IllegalArgumentException("Channel not found");
-        } else {
-            return data.get(channelId);
-        }
+        return repository.findById(channelId);
     }
 
     @Override
-    public Set<Channel> getAllChannels() {
-        return new HashSet<>(data.values());
+    public List<Channel> getAllChannels() {
+        return repository.findAll();
     }
 
     @Override
     public Channel updateChannel(String channelId, String newName, String newDescription) {
-        Channel channel = data.get(channelId);
-        if (channel == null) {
-            throw new IllegalArgumentException("Channel not found");
-        } else {
+        Channel channel = repository.findById(channelId);
+        if(channel != null) {
             channel.setChannelname(newName);
             channel.setDescription(newDescription);
             channel.setUpdatedAt(System.currentTimeMillis());
+
+            repository.deleteById(channelId);
+            return repository.save(channel);
+        } else {
+            throw new IllegalArgumentException("Channel not found");
         }
-        return channel;
     }
 
     @Override
     public Channel deleteChannel(String channelId) {
-        Channel removed = data.remove(channelId);
-        if (removed != null) {
-            removed.getMessages().clear();
-        }
-        return removed;
+
+        return repository.deleteById(channelId);
     }
 }
 

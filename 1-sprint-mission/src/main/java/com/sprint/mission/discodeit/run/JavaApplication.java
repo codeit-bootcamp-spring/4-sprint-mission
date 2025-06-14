@@ -11,10 +11,8 @@ import com.sprint.mission.discodeit.service.file.FileChannelService;
 import com.sprint.mission.discodeit.service.file.FileMessageService;
 import com.sprint.mission.discodeit.service.file.FileUserService;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JavaApplication {
 
@@ -68,7 +66,7 @@ public class JavaApplication {
         System.out.println("\n[채널 생성 - 1개의 채널 조회]");
         Channel fetchedChannel = channelService.getChannelById(channel1.getChannelId());
         if (fetchedChannel != null) {
-            printChannels(Set.of(fetchedChannel));
+            printChannels(List.of(fetchedChannel));
         }
 
         //조회 - 다건
@@ -80,7 +78,7 @@ public class JavaApplication {
         System.out.println("\n[수정된 채널]");
         Channel fetchedChannel1 = channelService.getChannelById(channel1.getChannelId());
         if (fetchedChannel1 != null) {
-            printChannels(Set.of(fetchedChannel1));
+            printChannels(List.of(fetchedChannel1));
         }
 
         // 삭제
@@ -112,10 +110,20 @@ public class JavaApplication {
         printMessages(messageService.getMessages(sender, chatChannel));
 
 
+        List<Message> usermessages = messageService.getMessages(sender, null);
+        List<Message> searchmessages = new ArrayList<>(usermessages);
+
+        System.out.println("\n[유저가 보낸 메시지 목록]");
+        System.out.println("총 메시지 수: " + usermessages.size());
+        for (Message message : usermessages) {
+            System.out.println("- " + message.getContent() + " (작성자: " + sender.getUsername() + ")");
+        }
+
+
         //수정
         messageService.updateMessage(message3.getMessageId(), "엇. 실수로 공지방에 올렸네요.");
         System.out.println("\n[수정된 메시지 조회]");
-        printMessages(List.of(messageService.getMessageById(message3.getMessageId(),sender,chatChannel)));
+        printMessages(List.of(messageService.getMessageById(message3.getMessageId(), sender, chatChannel )));
 
         //삭제
         messageService.deleteMessage(message1.getMessageId());
@@ -130,7 +138,7 @@ public class JavaApplication {
         }
     }
 
-    private static void printChannels(Set<Channel> channels) {
+    private static void printChannels(List<Channel> channels) {
         for (Channel channel : channels) {
             System.out.printf("ID: %s | 이름: %s | 설명: %s%n",
                     channel.getChannelId(), channel.getChannelname(), channel.getDescription());

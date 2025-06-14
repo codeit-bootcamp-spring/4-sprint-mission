@@ -20,14 +20,6 @@ public class Message extends BaseEntity implements Serializable {
         this.channel = channel;
     }
 
-    public Message(String messageId, User user, Channel channel, String content, long createdAt, long updatedAt) {
-        super(createdAt, updatedAt);
-        this.messageId = messageId;
-        this.user = user;
-        this.channel = channel;
-        this.content = content;
-    }
-
     public String getMessageId() {
         return messageId;
     }
@@ -64,33 +56,5 @@ public class Message extends BaseEntity implements Serializable {
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';
-    }
-
-    public String toCSV() {
-        return String.join(",",
-                messageId,
-                user.getUserId(),
-                channel.getChannelId(),
-                content,
-                String.valueOf(createdAt),
-                String.valueOf(updatedAt)
-        );
-    }
-
-    public static Message fromCSV(String line, User user, Channel channel) {
-        String[] split = line.split(",");
-
-        if (split.length < 6) {
-            return null;
-        } else {
-            String messageId = split[0];
-//            String userId = split[1];
-//            String channelId = split[2];
-            String contnent = split[3];
-            long createdAt = Long.parseLong(split[4]);
-            long updatedAt = Long.parseLong(split[5]);
-
-            return new Message(messageId,user, channel, contnent, createdAt, updatedAt);
-        }
     }
 }

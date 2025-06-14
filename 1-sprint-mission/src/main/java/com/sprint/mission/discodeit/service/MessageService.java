@@ -5,7 +5,6 @@ import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
 
 import java.util.List;
-import java.util.Map;
 
 public interface MessageService {
     Message sendMessage(User userId, Channel channelId, String content);

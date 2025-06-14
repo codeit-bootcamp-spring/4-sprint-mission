@@ -1,17 +1,15 @@
 package com.sprint.mission.discodeit.entity;
 
-public abstract class BaseEntity {
+import java.io.Serializable;
+
+public abstract class BaseEntity implements Serializable {
     protected final Long createdAt;
     protected Long updatedAt;
+    private static final long serialVersionUID = 1L;
 
     public BaseEntity() {
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = this.createdAt;
-    }
-
-    public BaseEntity(Long createdAt, Long updatedAt) {
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
     }
 
     public Long getCreatedAt() {
