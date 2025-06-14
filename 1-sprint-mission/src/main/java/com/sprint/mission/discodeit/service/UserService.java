@@ -3,7 +3,6 @@ package com.sprint.mission.discodeit.service;
 import com.sprint.mission.discodeit.entity.User;
 
 import java.util.List;
-import java.util.Set;
 
 public interface UserService {
     User createUser(User user);
