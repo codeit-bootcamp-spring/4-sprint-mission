@@ -14,6 +14,9 @@ import com.sprint.mission.discodeit.service.ChannelService;
 
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.service.UserService;
+import com.sprint.mission.discodeit.service.basic.BasicChannelService;
+import com.sprint.mission.discodeit.service.basic.BasicMessageService;
+import com.sprint.mission.discodeit.service.basic.BasicUserService;
 import com.sprint.mission.discodeit.service.factory.FileServiceFactory;
 import com.sprint.mission.discodeit.service.factory.JCFServiceFactory;
 import com.sprint.mission.discodeit.service.factory.ServiceFactory;
@@ -30,10 +33,15 @@ public class JavaApplication {
         MessageRepository messageRepository = fileRepositoryFactory.CreateMessageRepository();
         ChannelRepository channelRepository = fileRepositoryFactory.CreateChannelRepository();
 
-        ServiceFactory factory = new FileServiceFactory();
-        UserService userService = factory.createUserService();
-        MessageService messageService = factory.createMessageService();
-        ChannelService channelService = factory.createChannelService();
+//        ServiceFactory factory = new FileServiceFactory();
+//        UserService userService = factory.createUserService();
+//        MessageService messageService = factory.createMessageService();
+//        ChannelService channelService = factory.createChannelService();
+
+        //베이직서비스 테스트
+        UserService userService = new BasicUserService(userRepository);
+        MessageService messageService = new BasicMessageService(messageRepository);
+        ChannelService channelService = new BasicChannelService(channelRepository,messageService);
 
         try {
             userService.registUser("홍길동");
