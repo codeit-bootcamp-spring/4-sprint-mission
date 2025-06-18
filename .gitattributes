@@ -1,0 +1,5 @@
+* text=auto
+*.java text eol=lf
+*.gradle text eol=lf
+*.gitignore text eol=lf
+*settings.gradle text eol=lf
