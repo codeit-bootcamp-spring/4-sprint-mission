@@ -1,50 +1,45 @@
 package com.sprint.mission.discodeit.entity;
+
+import lombok.Getter;
+
 import java.io.Serializable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-public class Message extends baseEntity implements Serializable {
+@Getter
+public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
-    private UUID messageId;
-    private String messageBody;
-    private User user;
-    private Channel channel;
 
-    private static final User deletedUser = new User("deletedUser");
-    //작성자가 탈퇴한 경우 메세지의 작성자는 deletedUser로 바뀐다.
+    private UUID id;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private String content;
+    private UUID channelId;
+    private UUID authorId;
+    private List<UUID> attachmentIds;
 
-    public Message(String messageBody,User user,Channel channel) {
-        super();
-        this.messageId = UUID.randomUUID();
-        this.messageBody = messageBody;
-        this.user = user;
-        this.channel = channel;
-    }
-
-    public UUID getMessageId() {
-        return messageId;
-    }
-
-    public String getMessageBody() {
-        return messageBody;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public Channel getChannel() {
-        return channel;
-    }
-
-    public void removeUser(){
-        this.user = deletedUser;
-        //작성자가 탈퇴할 경우 메세지는 남아있지만 작성자의 이름은 deletedUser가 된다.
-    }
-
-    public void updateMessageBody(String newMessageBody) {
-        this.messageBody = newMessageBody;
+    public Message(String content, UUID channelId, UUID authorId,List<UUID> attachmentIds) {
+        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
+        this.updatedAt = createdAt;
+        this.content = content;
+        this.channelId = channelId;
+        this.authorId = authorId;
+        this.attachmentIds = attachmentIds;
     }
 
 
+    public void update(String newContent) {
+        boolean anyValueUpdated = false;
+        if (newContent != null && !newContent.equals(this.content)) {
+            this.content = newContent;
+            anyValueUpdated = true;
+        }
 
+        if (anyValueUpdated) {
+            this.updatedAt = Instant.now();
+        }
+    }
 }

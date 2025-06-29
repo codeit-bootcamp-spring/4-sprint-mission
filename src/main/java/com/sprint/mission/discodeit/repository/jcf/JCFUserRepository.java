@@ -4,46 +4,50 @@ import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.repository.UserRepository;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class JCFUserRepository implements UserRepository {
-    private static JCFUserRepository instance;
-    private final Map<UUID, User> data = new HashMap<>();
+    private final Map<UUID, User> data;
 
-    private JCFUserRepository() {}
-
-    public static  JCFUserRepository getInstance() {
-        if (instance == null) {
-            instance = new JCFUserRepository();
-        }
-        return instance;
+    public JCFUserRepository() {
+        this.data = new HashMap<>();
     }
 
     @Override
     public User save(User user) {
-        data.put(user.getUserId(), user);
+        this.data.put(user.getId(), user);
         return user;
     }
 
     @Override
-    public User findById(UUID userId) {
-        return data.get(userId);
-    }
-
-    @Override
-    public List<User> findByName(String userName) {
-        return data.values().stream()
-                .filter(user -> user.getUserName().equals(userName))
-                .collect(Collectors.toList());
+    public Optional<User> findById(UUID id) {
+        return Optional.ofNullable(this.data.get(id));
     }
 
     @Override
     public List<User> findAll() {
-        return new ArrayList<>(data.values());
+        return this.data.values().stream().toList();
     }
 
     @Override
-    public boolean isContains(UUID userId) {
-        return data.containsKey(userId);
+    public boolean existsById(UUID id) {
+        return this.data.containsKey(id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        this.data.remove(id);
+    }
+
+    @Override
+    public boolean existsByUsername(String username) {
+        return findAll().stream()
+                .anyMatch(user -> user.getUsername().equals(username));
+
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return findAll().stream()
+                .anyMatch(user -> user.getEmail().equals(email));
     }
 }

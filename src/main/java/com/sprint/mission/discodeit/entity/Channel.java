@@ -1,57 +1,55 @@
 package com.sprint.mission.discodeit.entity;
+
+import com.sprint.mission.discodeit.DTO.PrivateChannelRequsest;
+import com.sprint.mission.discodeit.DTO.PublicChannelRequest;
+import lombok.Getter;
+
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 
-public class Channel extends baseEntity implements Serializable {
+@Getter
+public class Channel implements Serializable {
     private static final long serialVersionUID = 1L;
-    private UUID channelId;
-    private String channelName;
-    private List<User> users;
-    private List<Message> messages;
+    private UUID id;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private ChannelType type;
+    private String name;
+    private String description;
 
-    public Channel(String channelName) {
-        super();
-        this.channelId = UUID.randomUUID();
-        this.channelName = channelName;
-        messages = new ArrayList<Message>();
-        users = new ArrayList<User>();
+    public Channel(PublicChannelRequest request) {
+        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
+        this.updatedAt = createdAt;
+        this.type = request.type();
+        this.name = request.name();
+        this.description = request.description();
     }
 
-    public UUID getChannelId() { return channelId; }
+    public Channel(PrivateChannelRequsest request) {
+        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
+        this.updatedAt = createdAt;
+        this.type = request.type();
+        this.name = "private room";
+        this.description = "private room";
 
-    public String getChannelName() { return channelName ; }
+    }
 
-    public List<User> getUsers() { return users; }
+    public void update(String newName, String newDescription) {
+        boolean anyValueUpdated = false;
+        if (newName != null && !newName.equals(this.name)) {
+            this.name = newName;
+            anyValueUpdated = true;
+        }
+        if (newDescription != null && !newDescription.equals(this.description)) {
+            this.description = newDescription;
+            anyValueUpdated = true;
+        }
 
-    public List<Message> getMessages() { return messages; }
-
-    public void addUser(User newUser) {
-        if(!users.contains(newUser)) {
-            users.add(newUser);
-            newUser.addChannel(this);
+        if (anyValueUpdated) {
+            this.updatedAt = Instant.now();
         }
     }
-    public void removeUser(User deletedUser) {
-        if(users.contains(deletedUser)) {
-            users.remove(deletedUser);
-            deletedUser.removeChannel(this);
-        }
-    }
-
-    public void addMessage(Message m) {
-        this.messages.add(m);
-    }
-
-    public void removeMessage(Message deletedMessage){
-            this.messages.remove(deletedMessage);
-    }
-
-    public void updateChannelName(String channelName) {
-        this.channelName = channelName;
-    }
-
-
-
 }

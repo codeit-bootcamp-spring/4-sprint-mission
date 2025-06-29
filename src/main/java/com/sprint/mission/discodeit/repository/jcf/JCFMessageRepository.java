@@ -4,51 +4,45 @@ import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class JCFMessageRepository implements MessageRepository {
-    private static JCFMessageRepository instance;
-    private final Map<UUID, Message> data = new HashMap<>();
+    private final Map<UUID, Message> data;
 
-    private JCFMessageRepository() {}
-
-    public static JCFMessageRepository getInstance() {
-        if (instance == null) {
-            instance = new JCFMessageRepository();
-        }
-        return instance;
+    public JCFMessageRepository() {
+        this.data = new HashMap<>();
     }
 
     @Override
     public Message save(Message message) {
-        data.put(message.getMessageId(), message);
+        this.data.put(message.getId(), message);
         return message;
     }
 
     @Override
-    public void delete(UUID messageId) {
-        data.remove(messageId);
-    }
-
-    @Override
-    public Message findById(UUID messageId) {
-        return data.get(messageId);
-    }
-
-    @Override
-    public List<Message> findByBody(String messageBody) {
-        return data.values().stream()
-                .filter(message -> message.getMessageBody().contains(messageBody))
-                .collect(Collectors.toList());
+    public Optional<Message> findById(UUID id) {
+        return Optional.ofNullable(this.data.get(id));
     }
 
     @Override
     public List<Message> findAll() {
-        return new ArrayList<>(data.values());
+        return this.data.values().stream().toList();
     }
 
     @Override
-    public boolean isContains(UUID messageId) {
-        return data.containsKey(messageId);
+    public List<Message> findByChannelId(UUID channelId) {
+        List<Message> messsage = findAll().stream()
+                .filter(message -> message.getChannelId().equals(channelId))
+                .toList();
+        return messsage;
+    }
+
+    @Override
+    public boolean existsById(UUID id) {
+        return this.data.containsKey(id);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        this.data.remove(id);
     }
 }

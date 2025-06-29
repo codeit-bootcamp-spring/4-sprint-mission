@@ -1,75 +1,55 @@
 package com.sprint.mission.discodeit.entity;
+
+import com.sprint.mission.discodeit.DTO.UserCreateRequest;
+import lombok.Getter;
+
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 
-public class User extends baseEntity implements Serializable {
+@Getter
+public class User implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public enum Status{
-        ACTIVE,
-        INACTIVE,
-        DELETED;
+    private UUID id;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private String username;
+    private String email;
+    private String password;
+    private UUID profileId;
+
+    public User(UserCreateRequest userCreateRequest) {
+        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
+        this.updatedAt = createdAt;
+        this.username = userCreateRequest.username();
+        this.email = userCreateRequest.email();
+        this.password = userCreateRequest.password();
     }
 
-    private UUID userId;
-    private String userName;
-    private List<Channel> channels;
-    private List<Message> messages;
-    private Status status;
+    public void update(String newUsername, String newEmail, String newPassword) {
+        boolean anyValueUpdated = false;
+        if (newUsername != null && !newUsername.equals(this.username)) {
+            this.username = newUsername;
+            anyValueUpdated = true;
+        }
+        if (newEmail != null && !newEmail.equals(this.email)) {
+            this.email = newEmail;
+            anyValueUpdated = true;
+        }
+        if (newPassword != null && !newPassword.equals(this.password)) {
+            this.password = newPassword;
+            anyValueUpdated = true;
+        }
 
-    public User(String userName) {
-        super();
-        this.userId =UUID.randomUUID();
-        this.userName = userName;
-        this.status = status.ACTIVE;
-        this.channels = new ArrayList<>();
-        this.messages = new ArrayList<>();
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public List<Channel> getChannels() {
-        return channels;
-    }
-
-    public List<Message> getMessages() {
-        return messages;
-    }
-
-    public void updateUserName(String newUserName) {
-       this.userName = newUserName;
-    }
-
-    public Status getStatus() { return status; }
-
-    public void setStatus(Status status) { this.status = status; }
-
-    public void addChannel(Channel newChannel){
-        if(!channels.contains(newChannel)) {
-            channels.add(newChannel);
-            newChannel.addUser(this);
+        if (anyValueUpdated) {
+            this.updatedAt = Instant.now();
         }
     }
 
-    public void removeChannel(Channel newChannel){
-        if(channels.contains(newChannel)) {
-            channels.remove(newChannel);
-            newChannel.removeUser(this);
-        }
+    public void setProfileId(UUID profileId) {
+        this.profileId = profileId;
+        this.updatedAt = Instant.now();
     }
-
-    public void addMessage(Message newMessage){
-        this.messages.add(newMessage);
-    }
-
-    public void removeMessage(Message m){ this.messages.remove(m); }
-
 }
