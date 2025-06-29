@@ -13,6 +13,7 @@ import com.sprint.mission.discodeit.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -26,6 +27,18 @@ public class BasicMessageService implements MessageService {
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
     private final BinaryContentRepository binaryContentRepository;
+
+    private void updateMessage(Message message , String newContent) {
+        boolean anyValueUpdated = false;
+        if (newContent != null && !newContent.equals(message.getContent())) {
+            message.setContent(newContent);
+            anyValueUpdated = true;
+        }
+
+        if (anyValueUpdated) {
+            message.setUpdatedAt(Instant.now());
+        }
+    }
 
     private MessageResponse toDto(Message message) {
         return new MessageResponse(
@@ -91,7 +104,7 @@ public class BasicMessageService implements MessageService {
     public MessageResponse update(MessageUpdateRequest request) {
         Message message = messageRepository.findById(request.messageId())
                 .orElseThrow(() -> new NoSuchElementException("Message with id " + request.messageId() + " not found"));
-        message.update(request.newContent());
+        updateMessage(message, request.newContent());
         return toDto(messageRepository.save(message));
     }
 

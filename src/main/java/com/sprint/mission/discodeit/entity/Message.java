@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.entity;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Setter
 @Getter
 public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -31,15 +33,16 @@ public class Message implements Serializable {
     }
 
 
-    public void update(String newContent) {
-        boolean anyValueUpdated = false;
-        if (newContent != null && !newContent.equals(this.content)) {
-            this.content = newContent;
-            anyValueUpdated = true;
-        }
-
-        if (anyValueUpdated) {
-            this.updatedAt = Instant.now();
-        }
-    }
+//    public void update(String newContent) {
+//        boolean anyValueUpdated = false;
+//        if (newContent != null && !newContent.equals(this.content)) {
+//            this.content = newContent;
+//            anyValueUpdated = true;
+//        }
+//
+//        if (anyValueUpdated) {
+//            this.updatedAt = Instant.now();
+//        }
+//    }
+    //비즈니스 로직이라고 생각되어 서비스로 이관
 }

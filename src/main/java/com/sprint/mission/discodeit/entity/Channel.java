@@ -3,11 +3,13 @@ package com.sprint.mission.discodeit.entity;
 import com.sprint.mission.discodeit.DTO.PrivateChannelRequsest;
 import com.sprint.mission.discodeit.DTO.PublicChannelRequest;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 
+@Setter
 @Getter
 public class Channel implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -37,19 +39,20 @@ public class Channel implements Serializable {
 
     }
 
-    public void update(String newName, String newDescription) {
-        boolean anyValueUpdated = false;
-        if (newName != null && !newName.equals(this.name)) {
-            this.name = newName;
-            anyValueUpdated = true;
-        }
-        if (newDescription != null && !newDescription.equals(this.description)) {
-            this.description = newDescription;
-            anyValueUpdated = true;
-        }
-
-        if (anyValueUpdated) {
-            this.updatedAt = Instant.now();
-        }
-    }
+//    public void update(String newName, String newDescription) {
+//        boolean anyValueUpdated = false;
+//        if (newName != null && !newName.equals(this.name)) {
+//            this.name = newName;
+//            anyValueUpdated = true;
+//        }
+//        if (newDescription != null && !newDescription.equals(this.description)) {
+//            this.description = newDescription;
+//            anyValueUpdated = true;
+//        }
+//
+//        if (anyValueUpdated) {
+//            this.updatedAt = Instant.now();
+//        }
+//    }
+    //비즈니스 로직이라고 생각되어 서비스로 이관
 }

@@ -13,6 +13,7 @@ import com.sprint.mission.discodeit.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -32,6 +33,26 @@ public class BasicUserService implements UserService {
                 user.getEmail(),
                 user.getProfileId()
         );
+    }
+
+    private void updateUser(User user, String newUsername, String newEmail, String newPassword) {
+        boolean anyValueUpdated = false;
+        if (newUsername != null && !newUsername.equals(user.getUsername())) {
+            user.setUsername(newUsername);
+            anyValueUpdated = true;
+        }
+        if (newEmail != null && !newEmail.equals(user.getEmail())) {
+            user.setEmail(newEmail);
+            anyValueUpdated = true;
+        }
+        if (newPassword != null && !newPassword.equals(user.getPassword())) {
+            user.setPassword(newPassword);
+            anyValueUpdated = true;
+        }
+
+        if (anyValueUpdated) {
+            user.setUpdatedAt(Instant.now());
+        }
     }
 
     @Override
@@ -91,7 +112,7 @@ public class BasicUserService implements UserService {
             user.setProfileId(newProfileId);
         }
 
-        user.update(request.newUsername(), request.newEmail(), request.newPassword());
+        updateUser(user, request.newUsername(), request.newEmail(), request.newPassword());
         return toDto(userRepository.save(user));
     }
 

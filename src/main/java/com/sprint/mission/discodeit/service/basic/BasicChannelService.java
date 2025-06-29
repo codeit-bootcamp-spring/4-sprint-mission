@@ -27,6 +27,22 @@ public class BasicChannelService implements ChannelService {
     private final ReadStatusRepository readStatusRepository;
     private final MessageRepository messageRepository;
 
+    private void updateChannel(Channel channel , String newName, String newDescription) {
+        boolean anyValueUpdated = false;
+        if (newName != null && !newName.equals(channel.getName())) {
+            channel.setName(newName);
+            anyValueUpdated = true;
+        }
+        if (newDescription != null && !newDescription.equals(channel.getDescription())) {
+            channel.setDescription(newDescription);
+            anyValueUpdated = true;
+        }
+
+        if (anyValueUpdated) {
+            channel.setUpdatedAt(Instant.now());
+        }
+    }
+
 
     @Override
     public  ChannelCreateResponse createPublicChannel(PublicChannelRequest publicChannelRequest) {
@@ -171,7 +187,7 @@ public class BasicChannelService implements ChannelService {
                 .orElseThrow(() -> new NoSuchElementException("Channel with id " + request.channelId() + " not found"));
 
         if(channel.getType() == ChannelType.PUBLIC) {
-            channel.update(request.newName(), request.newDescription());
+            updateChannel(channel,request.newName(), request.newDescription());
             channelRepository.save(channel);
             return new ChannelCreateResponse(
                     channel.getId(),
