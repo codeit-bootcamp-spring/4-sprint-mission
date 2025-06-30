@@ -1,173 +1,104 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.dto.channel.*;
 import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.RecordStatus;
-import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.ChannelType;
+import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.mapper.ChannelMapper;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
+@Service
+@RequiredArgsConstructor
+@Validated
 public class BasicChannelService implements ChannelService {
     private final ChannelRepository channelRepository;
+    private final ReadStatusRepository readStatusRepository;
     private final MessageRepository messageRepository;
 
-    public BasicChannelService(ChannelRepository channelRepository, MessageRepository messageRepository) {
-        this.channelRepository = channelRepository;
-        this.messageRepository = messageRepository;
-    }
-
-    /* =========================================================
-     * READ
-     * ========================================================= */
+    private final ChannelMapper channelMapper;
 
     @Override
-    public Set<Channel> getAllChannels() {
-        return channelRepository.findAllByRecordStatusIsActive();
+    public ChannelResponseDto createPublicChannel(ChannelCreateDto dto) {
+        validateCreateChannel(dto, ChannelType.PUBLIC);
+
+        Channel channel = channelMapper.toEntity(dto);
+        channelRepository.save(channel);
+        return channelMapper.toDto(channel, null, null);
     }
 
     @Override
-    public Optional<Channel> getChannelById(String channelId) {
-        validateNotNullChannelField(channelId);
-        return channelRepository.findById(channelId);
+    public ChannelResponseDto createPrivateChannel(ChannelCreateDto dto) {
+        validateCreateChannel(dto, ChannelType.PRIVATE);
+
+        Channel channel = channelMapper.toEntity(dto);
+        Channel saved = channelRepository.save(channel);
+
+        // ReadStatus 양 쪽 유저
+        readStatusRepository.save(new ReadStatus(dto.getUserId(), saved.getId()));
+        readStatusRepository.save(new ReadStatus(dto.getOtherUserId(), saved.getId()));
+
+        return channelMapper.toDto(saved, dto.getUserId(), dto.getOtherUserId());
     }
 
     @Override
-    public List<Channel> getChannelByName(String channelName) {
-        validateNotNullChannelField(channelName);
-        return channelRepository.findByChannelName(channelName);
-    }
-
-    @Override
-    public List<Channel> getChannelByUserId(String userId) {
-        validateNotNullChannelField(userId);
-        return channelRepository.findByUserId(userId);
-    }
-
-    /* =========================================================
-     * CREATE
-     * ========================================================= */
-
-    @Override
-    public Channel createChannel(String channelName, String description, Set<User> users, String ownerId) {
-        validateActiveUsers(users);
-        validateNotNullChannelField(channelName, ownerId);
-
-        Channel channel = new Channel(channelName, description, users, ownerId);
-        return channelRepository.save(channel);
-    }
-
-    /* =========================================================
-     * UPDATE
-     * ========================================================= */
-
-    @Override
-    public Channel updateChannelInfo(String channelId, String channelName, String description) {
-        validateNotNullChannelField(channelId, channelName);
-
-        Channel targetChannel = channelRepository.findByRecordStatusIsActiveId(channelId)
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found or not ACTIVE"));
-        targetChannel.changeChannelName(channelName);
-        targetChannel.updateChannelDesc(description);
-        targetChannel.touch();
-        return channelRepository.save(targetChannel);
-    }
-
-    @Override
-    public void joinUser(String channelId, User user) {
-        validateNotNullChannelField(channelId);
-        validateActiveUser(user);
-
-        Channel targetChannel = channelRepository.findByRecordStatusIsActiveId(channelId)
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found or not ACTIVE"));
-
-        targetChannel.addUser(user);
-        targetChannel.touch();
-        channelRepository.save(targetChannel);
-    }
-
-    @Override
-    public void leaveUser(String channelId, User user) {
-        validateNotNullChannelField(channelId);
-        validateActiveUser(user);
-
-        Channel targetChannel = channelRepository.findByRecordStatusIsActiveId(channelId)
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found or not ACTIVE"));
-
-        // user가 해당 채널에 참여 중이 아닌 경우
-        boolean isMember = targetChannel.getUsers().stream()
-                .anyMatch(u -> u.getId().equals(user.getId()));
-        if (!isMember) {
-            throw new IllegalArgumentException("User with id " + user.getId() + " is not a member of channel " + channelId);
+    public ChannelResponseDto find(UUID channelId, UUID userId) {
+        Channel channel = requireChannel(channelId);
+        if (channel.getType() == ChannelType.PUBLIC) {
+            return channelMapper.toDto(channel, null, null);
+        } else {
+            // PRIVATE 채널의 경우 상대방 ID 조회
+            UUID otherId = findOtherUser(channel, userId);
+            return channelMapper.toDto(channel, otherId, userId);
         }
-
-        targetChannel.removeUser(user);
-        targetChannel.touch();
-        channelRepository.save(targetChannel);
     }
 
     @Override
-    public Channel updateChannelOwner(String channelId, String ownerId) {
-        validateNotNullChannelField(channelId, ownerId);
+    public AllChannelByUserIdResponseDto findAllByUserId(UUID userId) {
+        // PUBLIC 채널
+        List<ChannelResponseDto> publicDtos = channelRepository
+                .findAllByChannelType(ChannelType.PUBLIC)
+                .stream()
+                .map(channel -> channelMapper.toDto(channel, null, null))
+                .toList();
 
-        Channel targetChannel = channelRepository.findByRecordStatusIsActiveId(channelId)
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found or not ACTIVE"));
+        // PRIVATE 채널 중, 이 userId가 속한 채널만 조회
+        List<ChannelResponseDto> privateDtos = readStatusRepository
+                .findAllByUserId(userId)
+                .stream()
+                .map(rs -> mapPrivateChannel(rs, userId))
+                .toList();
 
-        targetChannel.changeChannelOwnerId(ownerId);
-        targetChannel.touch();
-        return channelRepository.save(targetChannel);
-    }
-
-    /* =========================================================
-     * DELETE / RESTORE
-     * ========================================================= */
-
-    @Override
-    public void softDeleteChannel(Channel channel) {
-        validateActiveChannel(channel);
-
-        // 메시지 Soft Delete
-        channel.getMessages().forEach(msg -> {
-            msg.softDelete();
-            msg.touch();
-            messageRepository.softDeleteById(msg.getId());
-        });
-
-        // 채널 Soft Delete
-        channelRepository.softDeleteById(channel.getId());
+        return new AllChannelByUserIdResponseDto(publicDtos, privateDtos);
     }
 
     @Override
-    public void restoreChannel(Channel channel) {
-        validateDeletedChannel(channel);
-
-        // 메시지 복원
-        channel.getMessages().forEach(msg -> {
-            msg.restore();
-            msg.touch();
-            messageRepository.restoreById(msg.getId());
-        });
-
-        // 채널 복원
-        channelRepository.restoreById(channel.getId());
+    public ChannelResponseDto update(ChannelUpdateDto channelUpdateDto) {
+        Channel channel = requirePublicChannel(channelUpdateDto.getId());
+        String newName = channelUpdateDto.getName();
+        if (newName != null && !newName.equalsIgnoreCase(channel.getName())) {
+            validateUniqueName(newName);
+        }
+        channelMapper.updateEntity(channelUpdateDto, channel);
+        channelRepository.save(channel);
+        return channelMapper.toDto(channel, null, null);
     }
 
     @Override
-    public void hardDeleteChannel(Channel channel) {
-        validateDeletedChannel(channel);
-
-        // 메시지 관계 제거 - Hard Delete
-        new ArrayList<>(channel.getMessages()).forEach(channel::removeMessage);
-
-        // 유저 관계 제거 - Hard Delete
-        new ArrayList<>(channel.getUsers()).forEach(channel::removeUser);
-
-        // 채널 제거 Hard Delete
-        channelRepository.deleteById(channel.getId());
+    public void delete(UUID channelId) {
+        requireChannel(channelId);
+        messageRepository.deleteByChannelId(channelId);
+        readStatusRepository.deleteByChannelId(channelId);
+        channelRepository.deleteById(channelId);
     }
 
     /* =========================================================
@@ -175,80 +106,108 @@ public class BasicChannelService implements ChannelService {
      * ========================================================= */
 
     /**
-     * 채널의 ID 또는 이름이 null인지 검사합니다.
-     * 주로 외부에서 전달된 ID 인자의 유효성을 사전에 보장하기 위해 사용합니다.
+     * 채널 생성 시 채널 타입 및 필수 필드를 검증합니다.
      *
-     * @param values 검사할 문자열
-     * @throws IllegalArgumentException channelName이 null인 경우
+     * @param dto  채널 생성 DTO
+     * @param type 채널 타입 (PUBLIC, PRIVATE)
+     * @throws IllegalArgumentException 필수 정보가 없거나 타입이 일치하지 않는 경우
      */
-    private void validateNotNullChannelField(String... values) {
-        for (String v : values) {
-            if (v == null || v.trim().isEmpty()) {
-                throw new IllegalArgumentException("Channel Id or Channel Name cannot be null");
-            }
+    private void validateCreateChannel(ChannelCreateDto dto, ChannelType type) {
+        switch(type) {
+            case PUBLIC:
+                if (dto.getType() != ChannelType.PUBLIC) {
+                    throw new IllegalArgumentException("채널 타입은 PUBLIC 이어야 합니다.");
+                }
+                if (dto.getName() == null || dto.getName().isBlank()) {
+                    throw new IllegalArgumentException("Public 채널 생성 시 name 이 필요합니다.");
+                }
+                validateUniqueName(dto.getName());
+                break;
+            case PRIVATE:
+                if (dto.getType() != ChannelType.PRIVATE) {
+                    throw new IllegalArgumentException("채널 타입은 PRIVATE 이어야 합니다.");
+                }
+                if (dto.getUserId() == null || dto.getOtherUserId() == null) {
+                    throw new IllegalArgumentException("Private 채널 생성 시 userId 와 otherUserId 가 필요합니다.");
+                }
+                break;
+            default:
+                break;
         }
     }
 
     /**
-     * 채널이 null이거나 ACTIVE 상태가 아닌 경우 예외를 발생시킵니다.
-     * 채널을 수정하거나 삭제할 때 유효한 채널인지 확인하는 데 사용됩니다.
+     * PUBLIC 채널의 이름이 이미 존재하는지 검증합니다.
      *
-     * @param channel 검사할 Channel 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param name 생성하려는 채널 이름
+     * @throws IllegalArgumentException 중복일 경우
      */
-    private void validateActiveChannel(Channel channel) {
-        if (channel == null || channel.getRecordStatus() != RecordStatus.ACTIVE) {
-            throw new IllegalArgumentException("Channel must be ACTIVE and not null");
+    private void validateUniqueName(String name) {
+        boolean exists = channelRepository
+                .findAllByChannelType(ChannelType.PUBLIC)
+                .stream()
+                .anyMatch(ch -> ch.getName().equalsIgnoreCase(name.trim()));
+        if (exists) {
+            throw new IllegalArgumentException("이미 사용 중인 채널 이름입니다: " + name);
         }
     }
 
     /**
-     * 채널이 null이거나 DELETED 상태가 아닌 경우 예외를 발생시킵니다.
-     * 채널을 복원하거나 완전 삭제할 때 이미 삭제한 채널인지 확인하는 데 사용됩니다.
+     * 주어진 채널 ID에 해당하는 채널을 조회합니다.
      *
-     * @param channel 검사할 Channel 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param channelId 채널 ID
+     * @return 채널 엔티티
+     * @throws NoSuchElementException 채널이 존재하지 않는 경우
      */
-    private void validateDeletedChannel(Channel channel) {
-        if (channel == null || channel.getRecordStatus() != RecordStatus.DELETED) {
-            throw new IllegalArgumentException("Channel must be DELETED and not null");
-        }
-    }
-
-
-    /**
-     * 유저를 담고 있는 Set이 null이거나 ACTIVE 상태가 아닌 경우 예외를 발생시킵니다.
-     * 채널을 생성할 때 유효한 유저 Set인지 확인하는데 사용합니다.
-     *
-     * @param users 검사할 User Set 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
-     */
-    private void validateActiveUsers(Set<User> users) {
-        if (users == null || users.isEmpty()) {
-            throw new IllegalArgumentException("Users set cannot be null or empty");
-        }
-
-        for (User u : users) {
-            if (u == null) {
-                throw new IllegalArgumentException("Users set contains null User");
-            }
-            if (u.getRecordStatus() != RecordStatus.ACTIVE) {
-                throw new IllegalArgumentException(
-                        "Cannot add user (id=" + u.getId() + ") with recordStatus != ACTIVE");
-            }
-        }
+    private Channel requireChannel(UUID channelId) {
+        return channelRepository.findById(channelId)
+                .orElseThrow(() -> new NoSuchElementException("Channel with id " + channelId + " not found"));
     }
 
     /**
-     * 유저가 null이거나 ACTIVE 상태가 아닌 경우 예외를 발생시킵니다.
-     * 채널을 수정할 때 유효한 사용자여야 함을 보장합니다.
+     * Public 채널만 허용하는 검증 메서드입니다.
      *
-     * @param user 검사할 User 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param channelId 채널 ID
+     * @return Public 채널
+     * @throws IllegalArgumentException Public 채널이 아닌 경우
      */
-    private void validateActiveUser(User user) {
-        if (user == null || user.getRecordStatus() != RecordStatus.ACTIVE) {
-            throw new IllegalArgumentException("User must be ACTIVE and not null");
+    private Channel requirePublicChannel(UUID channelId) {
+        Channel channel = requireChannel(channelId);
+        if (channel.getType() != ChannelType.PUBLIC) {
+            throw new IllegalArgumentException("Channel with id " + channelId + " is not a PUBLIC channel.");
         }
+        return channel;
+    }
+
+    /**
+     * Private 채널에서 현재 사용자를 제외한 상대방 사용자 ID를 찾습니다.
+     * 존재하지 않을 경우 예외를 던집니다.
+     *
+     * @param channel 채널 엔티티
+     * @param userId 현재 사용자 ID
+     * @return 상대방 사용자 ID
+     * @throws NoSuchElementException 상대방을 찾을 수 없는 경우
+     */
+    private UUID findOtherUser(Channel channel, UUID userId) {
+        return readStatusRepository.findAllByChannelId(channel.getId())
+                .stream()
+                .map(ReadStatus::getUserId)
+                .filter(id -> !id.equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Other user not found in channel " + channel.getId()));
+    }
+
+    /**
+     * Private 채널에 대한 응답 DTO를 생성합니다.
+     *
+     * @param rs ReadStatus 정보
+     * @param userId 현재 사용자 ID
+     * @return 채널 응답 DTO
+     */
+    private ChannelResponseDto mapPrivateChannel(ReadStatus rs, UUID userId) {
+        Channel ch = requireChannel(rs.getChannelId());
+        UUID other = findOtherUser(ch, userId);
+        return channelMapper.toDto(ch, userId, other);
     }
 }

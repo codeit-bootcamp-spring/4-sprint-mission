@@ -1,134 +1,103 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.RecordStatus;
+import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
+@Repository
+@ConditionalOnProperty(
+        prefix="discodeit.repository",
+        name="type",
+        havingValue="file"
+)
 public class FileChannelRepository implements ChannelRepository {
-    private static final String FILE_PATH = "./data/channels.ser";
-    private final File storageFile;
+    private final Path filePath;
 
-    public FileChannelRepository() {
-        this.storageFile = new File(FILE_PATH);
-        if (!storageFile.exists()) {
-            writeChannelsToFile(new HashSet<>());
-        }
-        // TODO: 테스트끝나면 아래 코드 지우기 . 현재는 실행할 때마다 새로 초기화하기 위해서 추가함
-        writeChannelsToFile(new HashSet<>());
-    }
-
-    /* =========================================================
-     * File I/O
-     * ========================================================= */
-
-    /*
-     * 역직렬화
-     * */
-    private Set<Channel> readChannelsFromFile() {
-        if (!storageFile.exists() || storageFile.length() == 0) {
-            return new HashSet<>();
-        }
-
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(storageFile))) {
-            return (Set<Channel>) ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("채널 목록 조회 실패", e);
-        }
-    }
-
-    /*
-     * 직렬화
-     * */
-    private void writeChannelsToFile(Set<Channel> channels) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(storageFile))) {
-            oos.writeObject(channels);
+    public FileChannelRepository(
+            @Value("${discodeit.repository.file-directory}/Channel.ser") String filePathStr
+    ) {
+        this.filePath = Paths.get(filePathStr);
+        try {
+            Files.createDirectories(this.filePath.getParent());
+            if (Files.notExists(this.filePath)) {
+                // 빈 맵으로 초기 파일 생성
+                writeToFile(new HashMap<>());
+            }
         } catch (IOException e) {
-            throw new RuntimeException("채널 목록 저장 실패", e);
+            throw new RuntimeException("Cannot initialize Channel file", e);
+        }
+    }
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, Channel> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write Channel file", e);
+        }
+    }
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, Channel> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, Channel>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read Channel file", e);
         }
     }
 
     @Override
     public Channel save(Channel channel) {
-        Set<Channel> allChannels = readChannelsFromFile();
-        allChannels.removeIf(c -> c.getId().equals(channel.getId()));
-        allChannels.add(channel);
-        writeChannelsToFile(allChannels);
+        Map<UUID, Channel> all = readFromFile();
+        all.put(channel.getId(), channel);
+        writeToFile(all);
         return channel;
     }
 
     @Override
-    public Set<Channel> findAllByRecordStatusIsActive() {
-        return readChannelsFromFile().stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .collect(Collectors.toSet());
+    public Optional<Channel> findById(UUID id) {
+        return Optional.ofNullable(readFromFile().get(id));
     }
 
     @Override
-    public Optional<Channel> findById(String id) {
-        return readChannelsFromFile().stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public Optional<Channel> findByRecordStatusIsActiveId(String id) {
-        return readChannelsFromFile().stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(c -> c.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public List<Channel> findByChannelName(String channelName) {
-        return readChannelsFromFile().stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(c -> c.getChannelName().equals(channelName))
+    public List<Channel> findAllByChannelType(ChannelType channelType) {
+        return findAll()
+                .stream()
+                .filter(c -> c.getType() == channelType)
                 .toList();
     }
 
     @Override
-    public List<Channel> findByUserId(String userId) {
-        return readChannelsFromFile().stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(c -> c.getUsers().stream()
-                        .anyMatch(u -> u.getId().equals(userId)))
-                .toList();
+    public List<Channel> findAll() {
+        return new ArrayList<>(readFromFile().values());
     }
 
     @Override
-    public void softDeleteById(String id) {
-        Set<Channel> allChannels = readChannelsFromFile();
-        Channel deleteChannel = allChannels.stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Channel not found"));
-
-        deleteChannel.softDelete();
-        deleteChannel.touch();
-        writeChannelsToFile(allChannels);
+    public boolean existsById(UUID id) {
+        return readFromFile().containsKey(id);
     }
 
     @Override
-    public void restoreById(String id) {
-        Set<Channel> allChannels = readChannelsFromFile();
-        Channel restoreChannel = allChannels.stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Channel not found"));
-
-        restoreChannel.restore();
-        restoreChannel.touch();
-        writeChannelsToFile(allChannels);
-    }
-
-    @Override
-    public void deleteById(String id) {
-        Set<Channel> allChannels = readChannelsFromFile();
-        allChannels.removeIf(c -> c.getId().equals(id));
-        writeChannelsToFile(allChannels);
+    public void deleteById(UUID id) {
+        Map<UUID, Channel> all = readFromFile();
+        if (all.remove(id) != null) {
+            writeToFile(all);
+        }
     }
 }

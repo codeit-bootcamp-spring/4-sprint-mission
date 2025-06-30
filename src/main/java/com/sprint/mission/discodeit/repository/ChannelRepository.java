@@ -1,26 +1,19 @@
 package com.sprint.mission.discodeit.repository;
 
 import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.entity.ChannelType;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.UUID;
 
 public interface ChannelRepository {
-    // CREATE or UPDATE
     Channel save(Channel channel);
 
-    // READ
-    Set<Channel> findAllByRecordStatusIsActive();
-    Optional<Channel> findById(String id);
-    Optional<Channel> findByRecordStatusIsActiveId(String id);
+    Optional<Channel> findById(UUID id);
+    List<Channel> findAllByChannelType(ChannelType channelType);
+    List<Channel> findAll();
 
-    // 조회 조건
-    List<Channel> findByChannelName(String channelName);
-    List<Channel> findByUserId(String userId);
-
-    // DELETE
-    void softDeleteById(String id);
-    void restoreById(String id);
-    void deleteById(String id);
+    boolean existsById(UUID id);
+    void deleteById(UUID id);
 }

@@ -1,142 +1,110 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.RecordStatus;
 import com.sprint.mission.discodeit.repository.MessageRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
+@Repository
+@ConditionalOnProperty(
+        prefix="discodeit.repository",
+        name="type",
+        havingValue="file"
+)
 public class FileMessageRepository implements MessageRepository {
-    private static final String FILE_PATH = "./data/messages.ser";
-    private final File storageFile;
+    private final Path filePath;
 
-    public FileMessageRepository() {
-        this.storageFile = new File(FILE_PATH);
-        if (!storageFile.exists()) {
-            writeMessagesToFile(new ArrayList<>());
-        }
-        // TODO: 테스트끝나면 아래 코드 지우기 . 현재는 실행할 때마다 새로 초기화하기 위해서 추가함
-        writeMessagesToFile(new ArrayList<>());
-    }
-
-    /* =========================================================
-     * File I/O
-     * ========================================================= */
-
-    /*
-     * 역직렬화
-     * */
-    private List<Message> readMessagesFromFile() {
-        if (!storageFile.exists() || storageFile.length() == 0) {
-            return new ArrayList<>();
-        }
-
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(storageFile))) {
-            return (List<Message>) ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("메시지 목록 조회 실패", e);
-        }
-    }
-
-    /*
-     * 직렬화
-     * */
-    private void writeMessagesToFile(List<Message> messages) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(storageFile))) {
-            oos.writeObject(messages);
+    public FileMessageRepository(
+            @Value("${discodeit.repository.file-directory}/Message.ser") String filePathStr
+    ) {
+        this.filePath = Paths.get(filePathStr);
+        try {
+            Files.createDirectories(this.filePath.getParent());
+            if (Files.notExists(this.filePath)) {
+                writeToFile(new HashMap<>());
+            }
         } catch (IOException e) {
-            throw new RuntimeException("메시지 목록 저장 실패", e);
+            throw new RuntimeException("Cannot initialize Message file", e);
+        }
+    }
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, Message> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write Message file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, Message> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, Message>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read Message file", e);
         }
     }
 
     @Override
     public Message save(Message message) {
-        List<Message> allMessages = readMessagesFromFile();
-        allMessages.removeIf(m -> m.getId().equals(message.getId()));
-        allMessages.add(message);
-        writeMessagesToFile(allMessages);
+        Map<UUID, Message> all = readFromFile();
+        all.put(message.getId(), message);
+        writeToFile(all);
         return message;
     }
 
     @Override
-    public List<Message> findAllByRecordStatusIsActive() {
-        return readMessagesFromFile().stream()
-                .filter(m -> m.getRecordStatus() == RecordStatus.ACTIVE)
+    public Optional<Message> findById(UUID id) {
+        return Optional.ofNullable(readFromFile().get(id));
+    }
+
+    @Override
+    public List<Message> findAll() {
+        return new ArrayList<>(readFromFile().values());
+    }
+
+    @Override
+    public List<Message> findAllByChannelId(UUID channelId) {
+        return findAll().stream()
+                .filter(m -> m.getChannelId().equals(channelId))
                 .toList();
     }
 
     @Override
-    public Optional<Message> findById(String id) {
-        return readMessagesFromFile().stream()
-                .filter(m -> m.getId().equals(id))
-                .findFirst();
+    public boolean existsById(UUID id) {
+        return readFromFile().containsKey(id);
     }
 
     @Override
-    public Optional<Message> findByRecordStatusIsActiveAndId(String id) {
-        return readMessagesFromFile().stream()
-                .filter(m -> m.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(m -> m.getId().equals(id))
-                .findFirst();
+    public void deleteById(UUID id) {
+        Map<UUID, Message> all = readFromFile();
+        if (all.remove(id) != null) {
+            writeToFile(all);
+        }
     }
 
     @Override
-    public Optional<Message> findByRecordStatusIsDeletedAndId(String id) {
-        return readMessagesFromFile().stream()
-                .filter(m -> m.getRecordStatus() == RecordStatus.DELETED)
-                .filter(m -> m.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public List<Message> findByChannelId(String channelId) {
-        return readMessagesFromFile().stream()
-                .filter(m -> m.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(m -> m.getChannel().getId().equals(channelId))
-                .toList();
-    }
-
-    @Override
-    public List<Message> findByUserId(String userId) {
-        return readMessagesFromFile().stream()
-                .filter(m -> m.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(m -> m.getUser().getId().equals(userId))
-                .toList();
-    }
-
-    @Override
-    public void softDeleteById(String id) {
-        List<Message> allMessages = readMessagesFromFile();
-        Message deleteMessage = allMessages.stream()
-                .filter(m -> m.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Message not found"));
-
-        deleteMessage.softDelete();
-        deleteMessage.touch();
-        writeMessagesToFile(allMessages);
-    }
-
-    @Override
-    public void restoreById(String id) {
-        List<Message> allMessages = readMessagesFromFile();
-        Message restoreMessage = allMessages.stream()
-                .filter(m -> m.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Message not found"));
-
-        restoreMessage.restore();
-        restoreMessage.touch();
-        writeMessagesToFile(allMessages);
-    }
-
-    @Override
-    public void deleteById(String id) {
-        List<Message> allMessages = readMessagesFromFile();
-        allMessages.removeIf(m -> m.getId().equals(id));
-        writeMessagesToFile(allMessages);
+    public void deleteByChannelId(UUID channelId) {
+        // 채널에 속한 메시지 파일들을 모두 삭제
+        findAllByChannelId(channelId)
+                .stream()
+                .map(Message::getId)
+                .forEach(this::deleteById);
     }
 }

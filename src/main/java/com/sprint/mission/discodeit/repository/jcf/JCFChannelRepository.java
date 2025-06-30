@@ -1,82 +1,57 @@
 package com.sprint.mission.discodeit.repository.jcf;
 
 import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.RecordStatus;
+import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
+@Repository
+@ConditionalOnProperty(
+        prefix="discodeit.repository",
+        name="type",
+        havingValue="jcf",
+        matchIfMissing=true
+)
 public class JCFChannelRepository implements ChannelRepository {
-    private final Set<Channel> channelRepository = new HashSet<>();
+    private final Map<UUID, Channel> data;
+
+    public JCFChannelRepository() {
+        this.data = new HashMap<>();
+    }
 
     @Override
     public Channel save(Channel channel) {
-        channelRepository.removeIf(c -> c.getId().equals(channel.getId()));
-        channelRepository.add(channel);
+        this.data.put(channel.getId(), channel);
         return channel;
     }
 
     @Override
-    public Set<Channel> findAllByRecordStatusIsActive() {
-        return channelRepository.stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .collect(Collectors.toSet());
+    public Optional<Channel> findById(UUID id) {
+        return Optional.ofNullable(this.data.get(id));
     }
 
     @Override
-    public Optional<Channel> findById(String id) {
-        return channelRepository.stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public Optional<Channel> findByRecordStatusIsActiveId(String id) {
-        return channelRepository.stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(c -> c.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public List<Channel> findByChannelName(String channelName) {
-        return channelRepository.stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(c -> c.getId().equals(channelName))
+    public List<Channel> findAllByChannelType(ChannelType channelType) {
+        return this.data.values().stream()
+                .filter(c -> c.getType() == channelType)
                 .toList();
     }
 
     @Override
-    public List<Channel> findByUserId(String userId) {
-        return channelRepository.stream()
-                .filter(c -> c.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(c -> c.getUsers().stream()
-                        .anyMatch(u -> u.getId().equals(userId)))
-                .toList();
+    public List<Channel> findAll() {
+        return new ArrayList<>(this.data.values());
     }
 
     @Override
-    public void softDeleteById(String id) {
-        findByRecordStatusIsActiveId(id).ifPresent(c -> {
-                    c.softDelete();
-                    c.touch();
-                });
+    public boolean existsById(UUID id) {
+        return this.data.containsKey(id);
     }
 
     @Override
-    public void restoreById(String id) {
-        findById(id).ifPresent(c -> {
-                    c.restore();
-                    c.touch();
-                });
-    }
-
-    @Override
-    public void deleteById(String id) {
-        channelRepository.removeIf(c -> c.getId().equals(id));
+    public void deleteById(UUID id) {
+        this.data.remove(id);
     }
 }

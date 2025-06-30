@@ -1,105 +1,71 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.dto.message.MessageCreateDto;
+import com.sprint.mission.discodeit.dto.message.MessageResponseDto;
+import com.sprint.mission.discodeit.dto.message.MessageUpdateDto;
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.RecordStatus;
-import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.mapper.MessageMapper;
+import com.sprint.mission.discodeit.repository.BinaryContentRepository;
+import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
+@Service
+@RequiredArgsConstructor
+@Validated
 public class BasicMessageService implements MessageService {
     private final MessageRepository messageRepository;
+    private final ChannelRepository channelRepository;
+    private final UserRepository userRepository;
+    private final BinaryContentRepository binaryContentRepository;
 
-    public BasicMessageService(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
-    }
-
-    /* =========================================================
-     * READ
-     * ========================================================= */
+    private final MessageMapper messageMapper;
 
     @Override
-    public List<Message> getAllMessages() {
-        return messageRepository.findAllByRecordStatusIsActive();
-    }
+    public MessageResponseDto create(MessageCreateDto createMessageDto) {
+        validateChannelExists(createMessageDto.getChannelId());
+        validateAuthorExists(createMessageDto.getAuthorId());
 
-    @Override
-    public Optional<Message> getMessageById(String messageId) {
-        validateNotNullId(messageId);
-        return messageRepository.findById(messageId);
+        Message message = messageMapper.toEntity(createMessageDto);
+        messageRepository.save(message);
+        return messageMapper.toDto(message);
     }
 
     @Override
-    public List<Message> getMessageByUserId(String userId) {
-        validateNotNullId(userId);
-        return messageRepository.findByUserId(userId);
+    public MessageResponseDto find(UUID messageId) {
+        Message message =  requireMessage(messageId);
+        return messageMapper.toDto(message);
     }
 
     @Override
-    public List<Message> getMessageByChannelId(String channelId) {
-        validateNotNullId(channelId);
-        return messageRepository.findByChannelId(channelId);
-    }
-
-    /* =========================================================
-     * CREATE
-     * ========================================================= */
-
-    @Override
-    public Message createMessage(Channel channel, User user, String content) {
-        validateActiveChannel(channel);
-        validateActiveUser(user);
-
-        Message message = new Message(channel, user, content);
-        channel.addMessage(message);
-        user.addMessage(message);
-
-        return messageRepository.save(message);
-    }
-
-    /* =========================================================
-     * UPDATE
-     * ========================================================= */
-
-    @Override
-    public Message updateMessage(String messageId, Channel channel, User user, String content) {
-        validateNotNullId(messageId);
-        validateActiveChannel(channel);
-        validateActiveUser(user);
-
-        Message targetMessage = messageRepository.findByRecordStatusIsActiveAndId(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found or not ACTIVE"));
-
-        targetMessage.addChannel(channel);
-        targetMessage.addUser(user);
-        targetMessage.changeMessageContent(content);
-        targetMessage.touch();
-
-        return messageRepository.save(targetMessage);
-    }
-
-    /* =========================================================
-     * DELETE / RESTORE
-     * ========================================================= */
-
-    @Override
-    public void deleteMessageById(String messageId) {
-        validateNotNullId(messageId);
-        messageRepository.softDeleteById(messageId);
+    public List<MessageResponseDto> findAllByChannelId(UUID channelId) {
+        List<Message> messageList = messageRepository.findAllByChannelId(channelId);
+        return messageMapper.toDtoList(messageList);
     }
 
     @Override
-    public void restoreMessageById(String messageId) {
-        validateNotNullId(messageId);
-        messageRepository.restoreById(messageId);
+    public MessageResponseDto update(MessageUpdateDto updateMessageDto) {
+        Message message = requireMessage(updateMessageDto.getId());
+        messageMapper.updateEntity(updateMessageDto, message);
+        messageRepository.save(message);
+        return messageMapper.toDto(message);
     }
 
     @Override
-    public void hardDeleteMessageById(String messageId) {
-        validateNotNullId(messageId);
+    public void delete(UUID messageId) {
+        Message message = requireMessage(messageId);
+        List<UUID> attachmentIds = message.getAttachmentIds();
+        if (attachmentIds != null && !attachmentIds.isEmpty()) {
+            attachmentIds.forEach(binaryContentRepository::deleteById);
+        }
         messageRepository.deleteById(messageId);
     }
 
@@ -108,41 +74,50 @@ public class BasicMessageService implements MessageService {
      * ========================================================= */
 
     /**
-     * 메시지 ID가 null인지 검사합니다.
-     * 주로 외부에서 전달된 ID 인자의 유효성을 사전에 보장하기 위해 사용합니다.
+     * 채널 ID가 존재하는지 검증합니다.
      *
-     * @param id 검사할 ID 문자열
-     * @throws IllegalArgumentException ID가 null인 경우
+     * @param channelId 채널 ID
+     * @throws NoSuchElementException 채널이 존재하지 않는 경우
      */
-    private void validateNotNullId(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("ID cannot be null");
+    private void validateChannelExists(UUID channelId) {
+        if (!channelRepository.existsById(channelId)) {
+            throw new NoSuchElementException("Channel not found with id " + channelId);
         }
     }
 
     /**
-     * 채널이 null이거나 ACTIVE 상태가 아닌 경우 예외를 발생시킵니다.
-     * 메시지를 생성하거나 수정할 때 유효한 채널인지 확인하는 데 사용됩니다.
+     * 작성자(유저) ID가 존재하는지 검증합니다.
      *
-     * @param channel 검사할 Channel 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param authorId 작성자 ID
+     * @throws NoSuchElementException 작성자가 존재하지 않는 경우
      */
-    private void validateActiveChannel(Channel channel) {
-        if (channel == null || channel.getRecordStatus() != RecordStatus.ACTIVE) {
-            throw new IllegalArgumentException("Channel must be ACTIVE and not null");
+    private void validateAuthorExists(UUID authorId) {
+        if (!userRepository.existsById(authorId)) {
+            throw new NoSuchElementException("Author not found with id " + authorId);
         }
     }
 
     /**
-     * 유저가 null이거나 ACTIVE 상태가 아닌 경우 예외를 발생시킵니다.
-     * 메시지를 생성하거나 수정할 때 유효한 사용자여야 함을 보장합니다.
+     * 메시지 ID가 존재하는지 검증합니다.
      *
-     * @param user 검사할 User 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param messageId 메시지 ID
+     * @throws NoSuchElementException 메시지가 존재하지 않는 경우
      */
-    private void validateActiveUser(User user) {
-        if (user == null || user.getRecordStatus() != RecordStatus.ACTIVE) {
-            throw new IllegalArgumentException("User must be ACTIVE and not null");
+    private void validateMessageExists(UUID messageId) {
+        if (!messageRepository.existsById(messageId)) {
+            throw new NoSuchElementException("Message not found with id " + messageId);
         }
+    }
+
+    /**
+     * 메시지를 ID로 조회하며, 존재하지 않을 경우 예외를 발생시킵니다.
+     *
+     * @param messageId 메시지 ID
+     * @return 메시지 엔티티
+     * @throws NoSuchElementException 메시지가 존재하지 않는 경우
+     */
+    private Message requireMessage(UUID messageId) {
+        return messageRepository.findById(messageId)
+                .orElseThrow(() -> new NoSuchElementException("Message with id " + messageId + " not found"));
     }
 }

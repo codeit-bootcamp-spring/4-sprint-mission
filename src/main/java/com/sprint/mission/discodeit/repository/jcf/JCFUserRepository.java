@@ -1,92 +1,67 @@
 package com.sprint.mission.discodeit.repository.jcf;
 
-import com.sprint.mission.discodeit.entity.RecordStatus;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
+@Repository
+@ConditionalOnProperty(
+        prefix="discodeit.repository",
+        name="type",
+        havingValue="jcf",
+        matchIfMissing=true
+)
 public class JCFUserRepository implements UserRepository {
-    private final List<User> userRepository = new ArrayList<>();
+    private final Map<UUID, User> data;
+
+    public JCFUserRepository() {
+        this.data = new HashMap<>();
+    }
 
     @Override
     public User save(User user) {
-        userRepository.removeIf(u -> u.getId().equals(user.getId()));
-        userRepository.add(user);
+        this.data.put(user.getId(), user);
         return user;
     }
 
     @Override
-    public List<User> findAllByRecordStatusIsActive() {
-        return userRepository.stream()
-                .filter(u -> u.getRecordStatus() == RecordStatus.ACTIVE)
-                .toList();
+    public Optional<User> findById(UUID id) {
+        return Optional.ofNullable(this.data.get(id));
     }
 
     @Override
-    public Optional<User> findById(String id) {
-        return userRepository.stream()
-                .filter(u -> u.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public Optional<User> findByMemberStatusIsActiveAndId(String id) {
-        return userRepository.stream()
-                .filter(u -> u.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(u -> u.getStatus() == UserStatus.ACTIVE)
-                .filter(u -> u.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public Optional<User> findByMemberStatusIsInactiveAndId(String id) {
-        return userRepository.stream()
-                .filter(u -> u.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(u -> u.getStatus() == UserStatus.INACTIVE)
-                .filter(u -> u.getId().equals(id))
-                .findFirst();
-    }
-
-    @Override
-    public List<User> findByEmail(String email) {
-        return userRepository.stream()
-                .filter(u -> u.getRecordStatus() == RecordStatus.ACTIVE)
-                .filter(u -> u.getEmail().equals(email))
-                .toList();
-    }
-
-    @Override
-    public List<User> findByUsername(String username) {
-        return userRepository.stream()
-                .filter(u -> u.getRecordStatus() == RecordStatus.ACTIVE)
+    public Optional<User> findByUsername(String username) {
+        return this.data.values().stream()
                 .filter(u -> u.getUsername().equals(username))
-                .toList();
+                .findFirst();
     }
 
     @Override
-    public void softDeleteById(String id) {
-        findByMemberStatusIsActiveAndId(id).ifPresent(u -> {
-                    u.inactivate();
-                    u.softDelete();
-                    u.touch();
-                });
+    public List<User> findAll() {
+        return new ArrayList<>(this.data.values());
     }
 
     @Override
-    public void restoreById(String id) {
-        findById(id).ifPresent(u -> {
-                    u.activate();
-                    u.restore();
-                    u.touch();
-                });
+    public boolean existsById(UUID id) {
+        return this.data.containsKey(id);
     }
 
     @Override
-    public void deleteById(String id) {
-        userRepository.removeIf(u -> u.getId().equals(id));
+    public boolean existsByUsername(String username) {
+        return findByUsername(username).isPresent();
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return this.data.values().stream()
+                .anyMatch(u -> u.getEmail().equals(email));
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        this.data.remove(id);
     }
 }

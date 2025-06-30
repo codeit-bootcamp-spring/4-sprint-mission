@@ -1,206 +1,185 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.RecordStatus;
+import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateDto;
+import com.sprint.mission.discodeit.dto.user.UserCreateDto;
+import com.sprint.mission.discodeit.dto.user.UserUpdateDto;
+import com.sprint.mission.discodeit.dto.user.UserResponseDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
+import com.sprint.mission.discodeit.mapper.UserMapper;
+import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+@Service
+@RequiredArgsConstructor
+@Validated
 public class BasicUserService implements UserService {
     private final UserRepository userRepository;
-    private final MessageRepository messageRepository;
-
-    public BasicUserService(UserRepository userRepository, MessageRepository messageRepository) {
-        this.userRepository = userRepository;
-        this.messageRepository = messageRepository;
-    }
-
-    /* =========================================================
-     * READ
-     * ========================================================= */
+    private final UserStatusRepository userStatusRepository;
+    private final BinaryContentRepository binaryContentRepository;
+    private final UserMapper userMapper;
+    private final BinaryContentMapper binaryContentMapper;
 
     @Override
-    public List<User> getAllUsers() {
-        return userRepository.findAllByRecordStatusIsActive();
-    }
+    public UserResponseDto create(UserCreateDto requestDto) {
+        validateCreate(requestDto);
+        User createUser = userMapper.toEntity(requestDto);
+        userRepository.save(createUser);
+        handleProfileImage(createUser, requestDto.getBinaryContent());
 
-    @Override
-    public Optional<User> getUserById(String userId) {
-        validateNotNullUserField(userId);
-        return userRepository.findById(userId);
+        // UserStatus도 함께 저장
+        UserStatus userStatus = new UserStatus(createUser.getId());
+        userStatusRepository.save(userStatus);
+
+        return userMapper.toDto(createUser, userStatus.isOnline());
     }
 
     @Override
-    public List<User> getUserByEmail(String email) {
-        validateNotNullUserField(email);
-        return userRepository.findByEmail(email);
+    public UserResponseDto find(UUID userId) {
+        User user = requireUser(userId);
+        UserStatus userStatus = requireStatus(userId);
+        return userMapper.toDto(user, userStatus.isOnline());
     }
 
     @Override
-    public List<User> getUserByUsername(String username) {
-        validateNotNullUserField(username);
-        return userRepository.findByUsername(username);
-    }
+    public List<UserResponseDto> findAll() {
+        List<User> userList = userRepository.findAll();
+        List<UserStatus> statusList = userStatusRepository.findAll();
 
-    /* =========================================================
-     * CREATE
-     * ========================================================= */
+        Map<UUID, UserStatus> statusMap = statusList.stream()
+                .collect(Collectors.toMap(
+                        UserStatus::getUserId,
+                        Function.identity()
+                ));
 
-    @Override
-    public User createUser(String username, String email, String password) {
-        validateNotNullUserField(username, email, password);
-        User user = new User(username, email, password);
-        return userRepository.save(user);
-    }
-
-    /* =========================================================
-     * UPDATE
-     * ========================================================= */
-
-    @Override
-    public User updateUserInfo(String userId, String username, String email, String password) {
-        validateNotNullUserField(userId, username, email, password);
-
-        User targetUser = userRepository.findByMemberStatusIsActiveAndId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found or not ACTIVE"));
-
-        targetUser.changeUsername(username);
-        targetUser.updateUserEmail(email);
-        targetUser.changeUserPassword(password);
-        targetUser.touch();
-        return userRepository.save(targetUser);
-    }
-
-    // 사용자 비활성화
-    @Override
-    public void inactivateUser(User user) {
-        User targetUser = userRepository.findByMemberStatusIsActiveAndId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found or not ACTIVE"));
-
-        targetUser.inactivate();
-        targetUser.touch();
-        userRepository.save(targetUser);
-    }
-
-    // 비활성화된 사용자 다시 활성화
-    @Override
-    public void activateUser(User user) {
-        User targetUser = userRepository.findByMemberStatusIsInactiveAndId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found or not INACTIVE"));
-
-        targetUser.inactivate();
-        targetUser.touch();
-        userRepository.save(targetUser);
-    }
-
-    /* =========================================================
-     * DELETE / RESTORE
-     * ========================================================= */
-
-    @Override
-    public void deleteUser(User user) {
-        validateActiveUser(user);
-
-        // 메시지 Soft Delete
-        user.getMessages().forEach(msg -> {
-            msg.softDelete();
-            msg.touch();
-            messageRepository.softDeleteById(msg.getId());
-        });
-
-        // 채널과 연결 끊기
-        user.getChannels().forEach(msg -> {
-            msg.softDelete();
-            msg.touch();
-        });
-
-        // 유저 Soft Delete
-        userRepository.softDeleteById(user.getId());
+        return userMapper.toDtoListWithStatus(userList, statusMap);
     }
 
     @Override
-    public void restoreUser(User user) {
-        validateDeletedUser(user);
+    public UserResponseDto update(UserUpdateDto requestDto) {
+        User existingUser = requireUser(requestDto.getId());
 
-        // 메시지 복원
-        user.getMessages().forEach(msg -> {
-            msg.restore();
-            msg.touch();
-            messageRepository.restoreById(msg.getId());
-        });
+        // 변경된 경우에만 중복체크
+        if (!existingUser.getUsername().equals(requestDto.getUsername())) {
+            validateExistUsername(requestDto.getUsername());
+        }
+        if (!existingUser.getEmail().equals(requestDto.getEmail())) {
+            validateExistEmail(requestDto.getEmail());
+        }
+        UserStatus userStatus = requireStatus(existingUser.getId());
 
-        // 채널과 다시 연결
-        user.getChannels().forEach(msg -> {
-            msg.restore();
-            msg.touch();
-        });
+        handleProfileImage(existingUser, requestDto.getBinaryContent());
 
-        // 유저 복원
-        userRepository.restoreById(user.getId());
+        userMapper.updateEntity(requestDto, existingUser);
+        userRepository.save(existingUser);
+        return userMapper.toDto(existingUser, userStatus.isOnline());
     }
 
     @Override
-    public void hardDeleteUser(User user) {
-        validateDeletedUser(user);
-
-        // 메시지 관계 모두 제거
-        new ArrayList<>(user.getMessages()).forEach(user::removeMessage);
-
-        // 채널 관계 모두 제거
-        new ArrayList<>(user.getChannels()).forEach(user::removeChannel);
-
-        // 유저 제거
-        userRepository.deleteById(user.getId());
+    public void delete(UUID userId) {
+        User user = requireUser(userId);
+        if (user.getProfileId() != null) {
+            binaryContentRepository.deleteById(user.getProfileId());
+        }
+        userStatusRepository.deleteByUserId(userId);
+        userRepository.deleteById(userId);
     }
+
 
     /* =========================================================
      * INTERNAL VALIDATION HELPERS
      * ========================================================= */
+    /**
+     * 사용자 생성 시 중복 여부를 검증합니다.
+     *
+     * @param dto 사용자 생성 요청 DTO
+     * @throws IllegalArgumentException 사용자명 또는 이메일이 중복되는 경우
+     */
+    private void validateCreate(UserCreateDto dto) {
+        validateExistUsername(dto.getUsername());
+        validateExistEmail(dto.getEmail());
+    }
 
     /**
-     * 유저의 ID나 이메일, 이름 데이터가 null인지 검사합니다.
-     * 주로 외부에서 전달된 데이터 인자의 유효성을 사전에 보장하기 위해 사용합니다.
+     * 사용자명 중복 여부를 검증합니다.
      *
-     * @param values 검사할 ID 문자열
-     * @throws IllegalArgumentException ID가 null인 경우
+     * @param username 사용자명
+     * @throws IllegalArgumentException null, 공백이거나 이미 존재하는 사용자명인 경우
      */
-    private void validateNotNullUserField(String... values) {
-        for (String value: values) {
-            if (value == null || value.trim().isEmpty()) {
-                throw new IllegalArgumentException("User Id or User Email or username cannot be null");
-            }
+    private void validateExistUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null");
+        }
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("This username " + username + " is already in use");
         }
     }
 
     /**
-     * 유저가 null이거나 ACTIVE 상태가 아닌 경우 예외를 발생시킵니다.
-     * 유저를 수정하거나 삭제할 때 유효한 사용자여야 함을 보장합니다.
+     * 이메일 중복 여부를 검증합니다.
      *
-     * @param user 검사할 User 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param email 이메일
+     * @throws IllegalArgumentException null, 공백이거나 이미 존재하는 이메일인 경우
      */
-    private void validateActiveUser(User user) {
-        if (user == null || user.getRecordStatus() != RecordStatus.ACTIVE) {
-            throw new IllegalArgumentException("User must be ACTIVE and not null");
+    private void validateExistEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null");
+        }
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("This email " + email + " is already in use");
         }
     }
 
     /**
-     * 유저가 null이거나 DELETED 상태가 아닌 경우 예외를 발생시킵니다.
-     * 유저를 복원하거나 완전 삭제할 때 유효한 사용자여야 함을 보장합니다.
+     * 프로필 이미지가 존재하면 저장하고 사용자 엔티티에 반영합니다.
      *
-     * @param user 검사할 User 객체
-     * @throws IllegalArgumentException 유효하지 않은 경우
+     * @param user 사용자 엔티티
+     * @param bcDto 프로필 이미지 DTO
      */
-    private void validateDeletedUser(User user) {
-        if (user == null || user.getRecordStatus() != RecordStatus.DELETED) {
-            throw new IllegalArgumentException("User must be ACTIVE and not null");
+    private void handleProfileImage(User user, BinaryContentCreateDto bcDto) {
+        if (bcDto == null) return;
+        if (user.getProfileId() != null) {
+            binaryContentRepository.deleteById(user.getProfileId());
         }
+        BinaryContent bc = binaryContentMapper.toEntity(bcDto);
+        binaryContentRepository.save(bc);
+        user.updateProfileId(bc.getId());
+        userRepository.save(user);
     }
+
+    /**
+     * 사용자 ID로 사용자 정보를 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @return 사용자 엔티티
+     * @throws NoSuchElementException 존재하지 않는 경우
+     */
+    private User requireUser(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User with id " + userId + " not found"));
+    }
+
+    /**
+     * 사용자 ID로 UserStatus 정보를 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @return UserStatus 엔티티
+     * @throws NoSuchElementException 존재하지 않는 경우
+     */
+    private UserStatus requireStatus(UUID userId) {
+        return userStatusRepository.findByUserId(userId)
+                .orElseThrow(() -> new NoSuchElementException("UserStatus for id " + userId + " not found"));
+    }
+
 }
