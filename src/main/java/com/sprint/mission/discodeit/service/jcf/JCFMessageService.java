@@ -1,82 +1,62 @@
 package com.sprint.mission.discodeit.service.jcf;
 
+import com.sprint.mission.discodeit.Service.MessageService;
 import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.service.messageService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-public class JCFMessageService implements messageService {
+@Service
+@RequiredArgsConstructor
+public class JCFMessageService implements MessageService {
 
-    private final Map<UUID, Message> messageData;
-    // 메세지 데이터를 저장할 필드를 만들고,
+    private final Map<UUID, Message> messageList;
 
     public JCFMessageService() {
-
-        this.messageData = new HashMap<>();
-        // 생성자를 통해 불러올때마다 초기화한다
+        messageList = new HashMap<>();
     }
 
-    public Message createMessage(UUID userId, UUID channelId, String content) {
-        //메세지 생성
-
-        Message message = new Message(userId, channelId, content);
-        // 파라미터로 받은 값을 전부 Message 인스턴스에 넣는다
-        // Message에 새로 생성된 userId와 channelID가 들어가있다
-
-        this.messageData.put(channelId, message);
-        //Map이니까 add가 아니라 put을 쓴다
-
-        return message;
-
+    @Override
+    public Message createMessage(String message) {
+        Message newMessage = new Message(message);
+        messageList.put(newMessage.getId(), newMessage);
+        return newMessage;
     }
 
-    public Message readMessage(UUID searchId) {
-        // 메세지 찾기
+    @Override
+    public Message searchMessage(UUID id) {
+        Message findMessage = null;
+        if(messageList.containsKey(id)) {
+            findMessage = messageList.get(id);
+        } else {
+            throw new NoSuchElementException("찾지 못했어요..");
+        }
+        return findMessage;
+    }
 
+    @Override
+    public List<Message> searchAll() {
+        return messageList.values().stream().toList();
+    }
 
+    @Override
+    public Message updateMessage(UUID id, String newMessage) {
+        Message updatedMessage = null;
+        if(newMessage != null && !newMessage.equals(updatedMessage.getContent())) {
+            updatedMessage = messageList.get(id);
+            updatedMessage.setContent(newMessage);
+        }
+        return updatedMessage;
+    }
 
-        if(messageData.containsKey(searchId)) {
-
-            Message findMessage = this.messageData.get(searchId);
-
-            return findMessage;
-
+    @Override
+    public void deleteMessage(UUID id) {
+        if(!messageList.containsKey(id)) {
+            throw new NoSuchElementException("삭제할 수 없어!");
+        } else {
+            messageList.remove(id);
         }
 
-        /*
-
-        https://it-hhhj2.tistory.com/92
-
-        Message messageNullable = this.data.get(messageId);
-
-        return Optional.ofNullable(messageNullable)
-                .orElseThrow(() -> new NoSuchElementException("Message with id " + messageId + " not found"));
-
-         */
-
-        return null;
-
     }
-
-    public Message updateMessage(UUID messageId, String newContent) {
-        Message updateMessage = this.messageData.get(messageId);
-
-        if(newContent != null && !newContent.equals(updateMessage.getContent())) {
-            updateMessage.updateContent(newContent);
-        }
-
-        return updateMessage;
-    }
-
-    public Message deleteMessage(UUID messageId) {
-
-        if(!this.messageData.containsKey(messageId)) {
-
-            throw new NoSuchElementException("넌 삭제할 수 없어!");
-
-        }
-
-        return messageData.remove(messageId);
-    }
-
 }

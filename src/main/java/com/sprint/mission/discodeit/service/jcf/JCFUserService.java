@@ -1,66 +1,106 @@
 package com.sprint.mission.discodeit.service.jcf;
 
+import com.sprint.mission.discodeit.Service.UserService;
+import com.sprint.mission.discodeit.entity.DTO.CreateUserDTO;
+import com.sprint.mission.discodeit.entity.DTO.UpdateUserDTO;
+import com.sprint.mission.discodeit.entity.Mapper.UpdateUserMapper;
+import com.sprint.mission.discodeit.entity.Mapper.UserMapper;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.service.userService;
+import com.sprint.mission.discodeit.entity.UserStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.util.*;
 
+@Service
+@RequiredArgsConstructor
+public class JCFUserService  implements UserService {
 
-public class JCFUserService implements userService {
-
-    // [유저1, 유저2, 유저3, 유저4, ...]
-
-    private final Map<UUID,User> userList;
+    private final Map<UUID, User> userList;
+    UserMapper userMapper;
+    UserStatus userStatus;
 
     public JCFUserService() {
-
         userList = new HashMap<>();
+    }
+
+    @Override
+    public CreateUserDTO createUser(User user) {
+
+        if(userList.containsValue(user.getEmail()) && userList.containsValue(user.getNickName())) {
+            throw new RuntimeException("중복됩니다.");
+        }
+        userStatus = new UserStatus(UUID.randomUUID(), user.getId());
+        return userMapper.userCreateDtoToUser(user);
 
     }
 
-    public User createUser(String nickName, String password) {
+    //    public User createUser(String nickName, String password) { // uid는 User에서 만듬
+    //        User newUser = new User(nickName, password);
+    //        userList.put(newUser.getId(), newUser);
+    //        return newUser;
+    //    }
 
-        UUID userId = UUID.randomUUID();
-        User newClient = new User(nickName, password); // User에서 생성자에 public을 안넣어주면 에러발생
-        userList.put(userId,newClient);
+    @Override
+    public CreateUserDTO searchUser(UUID id) {
+        User findUser = null;
+        if(userList.containsKey(id) && userStatus.nowLogin()) {
+            findUser = userList.get(id);
+        }
+        assert findUser != null; // null처리 하려고 했는데 얘가 자동완성됨
+        return userMapper.userCreateDtoToUser(findUser);
+    }
+//    public User searchUser(UUID id) {
+//        User findUser = null;
+//        if (userList.containsKey(id)) {
+//            findUser = userList.get(id);
+//        }
+//        return findUser;
+//    }
 
-        return newClient;
-
+    // bean
+    // 메서드의 반환타입이 빈으로 등록됨
+//    public List<User> searchAll() {
+//        return this.userList.values().stream().toList();
+//    }
+    @Override
+    public List<CreateUserDTO> searchAll() {
+        List<CreateUserDTO> userDTOList = new ArrayList<>();
+        for(User user : userList.values()) {
+            if(userStatus.nowLogin()) {
+                userDTOList.add(userMapper.userCreateDtoToUser(userList.get(user)));
+            }
+        }
+        return userDTOList;
     }
 
-    public User searchUser(UUID searchId) {
-
-        if (userList.containsKey(searchId)) {
-            User findUser = userList.get(searchId);
-            return findUser;
+    @Override
+    public UpdateUserDTO updateUser(UUID id, String newNickName) {
+        User updateUser = this.userList.get(id);
+        UpdateUserMapper updateUserMapper = null;
+        if(newNickName != null && !newNickName.equals(updateUser.getNickName())) {
+           updateUser.setNickName(newNickName);
+        } else {
+            throw new NullPointerException();
         }
 
-        return null;
+        return updateUserMapper.updateUserDTO(updateUser);
     }
+//    public User updateUser(UUID id, String newNickName) {
+//        User updatedUser = this.userList.get(id);
+//        if(newNickName != null && !newNickName.equals(updatedUser.getNickName())) {
+//            updatedUser.setNickName(newNickName);
+//        }
+//        return updatedUser;
+//    }
 
-    public User updateUser(UUID userId, String newNickName) {
-        User update = userList.get(userId);
-
-        if(newNickName != null && !newNickName.equals(update.getNickName())) {
-            update.updateNickName(newNickName);
+    @Override
+    public void deleteUser(UUID id) {
+        if(!userList.containsKey(id)) {
+            throw new NoSuchElementException("너는 계정을 삭제할 수 없다!");
+        } else {
+            userList.remove(id);
+            // UserStatus, BinaryContent도 전부 삭제
         }
-
-        return null;
     }
-
-    public User deleteUser(UUID searchId) {
-
-        if(!userList.containsKey(searchId)) {
-
-            throw new NoSuchElementException("너는 계정을 삭제 할 수 없어!");
-
-        }
-
-        return userList.remove(searchId);
-
-    }
-
 }

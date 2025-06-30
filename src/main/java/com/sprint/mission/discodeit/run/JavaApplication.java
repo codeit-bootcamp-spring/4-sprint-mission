@@ -1,8 +1,6 @@
 package com.sprint.mission.discodeit.run;
 
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.service.jcf.JCFMessageService;
-import com.sprint.mission.discodeit.service.messageService;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -13,106 +11,27 @@ import java.util.List;
 
 public class JavaApplication {
 
-    public static void init(Path directory) { // 파일 생성
-
-        if(!Files.exists(directory)) {
-
-            try {
-
-                Files.createDirectories(directory);
-
-            } catch(IOException e) {
-
-                throw new RuntimeException(e);
-
-            }
-
-        }
-
-    }
-
-    public static <T> void save(Path filePath, T data) { // 파일 저장에 직렬화가 쓰인다. 객체를 byte Stream으로 변경
-        // 직렬화
-        try(FileOutputStream fos = new FileOutputStream(filePath.toFile());
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            ) {
-
-                oos.writeObject(data);
-
-        } catch(IOException e) {
-
-            throw new RuntimeException(e);
-
-        }
-
-    }
-
-    public static <T> List<T> load(Path directory) {
-
-        // 생성한 파일이 존재한다면
-        if(Files.exists(directory)) {
-
-            try {
-                // 파일에서 directory와 이름이 같은걸 찾은 다음에
-                List<T> list = Files.list(directory)
-
-                        .map(path -> {
-                            //역직렬화를 통해 byte stream -> 파일로 변경
-                            try (FileInputStream fis = new FileInputStream(path.toFile());
-                                    ObjectInputStream ois = new ObjectInputStream(fis)
-                                    ) {
-
-                                        Object data = ois.readObject();
-
-                                        return (T)data; // ??
-
-                            }catch(IOException | ClassNotFoundException e) {
-
-                                throw new RuntimeException(e);
-
-                            }
-
-                        })
-                        .toList();
-
-                return list;
-
-            } catch(IOException e) {
-
-                throw new RuntimeException(e);
-
-            }
-        // end if
-        } else {
-
-            return new ArrayList<>();
-
-        }
-
-    }
-
-
     public static void main(String[] args) {
 
-        // IO,직렬화 테스트
-        
-        Path userDirectory = Paths.get(System.getProperty("user.dir"), "data");
-
-        init(userDirectory);
-
-        List.of(
-                new User("레드","qwe123"),
-                new User("블루", "asd123"),
-                new User("그린", "zxc123")
-        ).forEach(user -> {
-
-            Path filePath = userDirectory.resolve(user.getNickName().concat(".ser")); // Path의 P는 대문자이다
-            save(filePath, user);
-
-        });
-
-        load(userDirectory)
-                .forEach(data -> System.out.println(data));
+//        // IO,직렬화 테스트
+//
+//        Path userDirectory = Paths.get(System.getProperty("user.dir"), "data");
+//
+//        init(userDirectory);
+//
+//        List.of(
+//                new User("레드","qwe123"),
+//                new User("블루", "asd123"),
+//                new User("그린", "zxc123")
+//        ).forEach(user -> {
+//
+//            Path filePath = userDirectory.resolve(user.getNickName().concat(".ser")); // Path의 P는 대문자이다
+//            save(filePath, user);
+//
+//        });
+//
+//        load(userDirectory)
+//                .forEach(data -> System.out.println(data));
 
     }
 }
