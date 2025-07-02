@@ -1,0 +1,71 @@
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### IntelliJ IDEA ###
+<<<<<<< HEAD
+.idea
+=======
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+>>>>>>> fe56ded0b57ffcf4521001ca7a956c8f5baf981f
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+<<<<<<< HEAD
+=======
+.idea
+>>>>>>> fe56ded0b57ffcf4521001ca7a956c8f5baf981f
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+<<<<<<< HEAD
+.DS_Store
+
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/application.yml
+
+# IntelliJ
+.idea/
+*.iml
+out/
+/target
+*.log
+
+# OS
+.DS_Store
+=======
+.DS_Store
+>>>>>>> fe56ded0b57ffcf4521001ca7a956c8f5baf981f
