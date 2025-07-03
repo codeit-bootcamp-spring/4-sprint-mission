@@ -1,0 +1,1145 @@
+{
+	"info": {
+		"_postman_id": "f17a0ff7-7809-45fd-99e0-2c1fe96aa5ad",
+		"name": "디스코드잇",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "46246622"
+	},
+	"item": [
+		{
+			"name": "유저 컨트롤러 테스트",
+			"item": [
+				{
+					"name": "회원 가입",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "kwon1@email.com",
+									"type": "text"
+								},
+								{
+									"key": "profileImage",
+									"type": "file",
+									"src": "/C:/Users/chaos/Pictures/Camera Roll/WIN_20250603_12_25_59_Pro.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "회원조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"kwon1\",\r\n  \"password\": \"pw1\",\r\n  \"email\": \"kwon1@email.com\",\r\n  \"profileImagePath\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/users/kwon1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"users",
+								"kwon1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "전체 회원 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"kwon1\",\r\n  \"password\": \"pw1\",\r\n  \"email\": \"kwon1@email.com\",\r\n  \"profileImagePath\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/users/kwon1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"users",
+								"kwon1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "findAll",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"kwon1\",\r\n  \"password\": \"pw1\",\r\n  \"email\": \"kwon1@email.com\",\r\n  \"profileImagePath\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/users/kwon1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"users",
+								"kwon1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "회원 삭제",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/users/kwon1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"users",
+								"kwon1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "권한 컨트롤러",
+			"item": [
+				{
+					"name": "로그인",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "세션 확인",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/login/myPage",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"login",
+								"myPage"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "채널 입장",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/receive-message/enter-channel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"receive-message",
+								"enter-channel"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "메세지 컨트롤러",
+			"item": [
+				{
+					"name": "메세지 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "kwon1-public-channe1",
+									"type": "text"
+								},
+								{
+									"key": "messageContents",
+									"value": "the firest message",
+									"type": "text"
+								},
+								{
+									"key": "extraContentsFiles",
+									"type": "file",
+									"src": [
+										"/C:/Users/chaos/Pictures/Camera Roll/돈까스.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/피자.jpg"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/messages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 전체 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "kwon1-public-channe1",
+									"type": "text"
+								},
+								{
+									"key": "messageContents",
+									"value": "the firest message",
+									"type": "text"
+								},
+								{
+									"key": "extraContentsFiles",
+									"type": "file",
+									"src": [
+										"/C:/Users/chaos/Pictures/Camera Roll/돈까스.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/피자.jpg"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/messages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 채널별 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "kwon1-public-channe1",
+									"type": "text"
+								},
+								{
+									"key": "messageContents",
+									"value": "the firest message",
+									"type": "text"
+								},
+								{
+									"key": "extraContentsFiles",
+									"type": "file",
+									"src": [
+										"/C:/Users/chaos/Pictures/Camera Roll/돈까스.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/피자.jpg"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/messages/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"messages",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메세지 수정",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "newContent",
+									"value": "the firest message",
+									"type": "text"
+								},
+								{
+									"key": "extraContentsFiles",
+									"type": "file",
+									"src": [
+										"/C:/Users/chaos/Pictures/Camera Roll/돈까스.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/피자.jpg"
+									]
+								},
+								{
+									"key": "messageId",
+									"value": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/messages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "messageId",
+									"value": "18fd7b41-4289-4bf0-bd40-92bdf8ec3abe",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/messages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "messageId",
+									"value": "18fd7b41-4289-4bf0-bd40-",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "메시지 수신 정보",
+			"item": [
+				{
+					"name": "메시지 수신 정보 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/receive-message",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"receive-message"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 수신 정보 업데이트",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/receive-message",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"receive-message"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "특정 유저의 메시지 수신 정보",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/receive-message/user",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"receive-message",
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "특정 채널의 유저들의 메시지 수신 정보 Copy",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/receive-message/user",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"receive-message",
+								"user"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "채널 컨트롤러",
+			"item": [
+				{
+					"name": "Public 채널 생성",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"hostUserId\": \"a05a4956-8228-4959-a00e-8f9db012422b\",\r\n    \"channelName\": \"kwon1-public-channel\",\r\n    \"description\": \"this channel is test channel\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Private 채널 생성",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"hostUserId\": \"a05a4956-8228-4959-a00e-8f9db012422b\",\r\n    \"channelName\": \"kwon1-public-channel\",\r\n    \"description\": \"this channel is test channel\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "전체 공용 채널 검색",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "회원 Private 채널 검색",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "유저의 전체 채널 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "채널 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "kwon1-public-channe2",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "공용 채널 정보 변경",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userResponseDto\": {\r\n    \"userId\": \"a05a4956-8228-4959-a00e-8f9db012422b\",\r\n    \"userName\": \"kwon1\",\r\n    \"email\": \"kwon1@example.com\"\r\n  },\r\n  \"channelResponseDto\": {\r\n        \"channelId\": \"1e56c2bf-c7f6-43ec-95fc-a9f669acede8\",\r\n        \"channelName\": \"kwon1-public-channel\",\r\n        \"hostUserId\": \"a05a4956-8228-4959-a00e-8f9db012422b\",\r\n        \"channelType\": \"PUBLIC_CHANNEL\",\r\n        \"channelDescription\": \"this channel is test channel\",\r\n        \"userIds\": [\r\n                \"a05a4956-8228-4959-a00e-8f9db012422b\"\r\n            ],\r\n        \"messageIds\": []\r\n    },\r\n    \"channelNewName\": \"new-channel-name\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "바이너리컨텐츠 컨트롤러",
+			"item": [
+				{
+					"name": "전체 바이너리 컨텐츠 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/binary-contents",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"binary-contents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "단일 바이너리 컨텐츠 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/binaryContent",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"binaryContent"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "파라미터로 단일 바이너리 컨텐츠 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/binaryContent/find?binaryContentId=65ace2ff-8c29-4f51-b010-6f259f3231d7",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"binaryContent",
+								"find"
+							],
+							"query": [
+								{
+									"key": "binaryContentId",
+									"value": "65ace2ff-8c29-4f51-b010-6f259f3231d7"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
