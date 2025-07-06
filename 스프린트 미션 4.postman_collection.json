@@ -1,0 +1,596 @@
+{
+	"info": {
+		"_postman_id": "767d6b90-4a24-41c8-b390-055bdf1d029c",
+		"name": "스프린트 미션 4",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38684784"
+	},
+	"item": [
+		{
+			"name": "유저API",
+			"item": [
+				{
+					"name": "사용자등록",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "username",
+									"value": "\b\bhali",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "hali@nate.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "hali1234!",
+									"type": "text"
+								},
+								{
+									"key": "profileImage",
+									"type": "file",
+									"src": "/Users/sin-eunsu/Desktop/hololive/스이세이 배경화면.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "사용자 전체 조회",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "사용자 수정",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "username",
+									"value": "lame",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "lamejjang@nate.com",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/users/eb70d07b-c983-4549-bcb8-354800771bb5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"eb70d07b-c983-4549-bcb8-354800771bb5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "사용자 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/551730c1-fee0-48c1-a43a-e63b85834557",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"551730c1-fee0-48c1-a43a-e63b85834557"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "사용자의 온라인 상태 업데이트",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id\": \"9862a0d8-a16f-4f11-beae-de9c7a529c72\",\n  \"lastActiveAt\": \"2025-07-02T12:00:00Z\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/users/9862a0d8-a16f-4f11-beae-de9c7a529c72",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"9862a0d8-a16f-4f11-beae-de9c7a529c72"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "로그인API",
+			"item": [
+				{
+					"name": "사용자 로그인",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"lam\",\n  \"password\": \"jjang1234!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/users/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "채널API",
+			"item": [
+				{
+					"name": "공개 채널 생성",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "자유채널",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "모든 사용자가 접근 가능함",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/channels/public",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "비공개 채널 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "participantUserIds",
+									"value": "eb70d07b-c983-4549-bcb8-354800771bb5",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/channels/private",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"channels",
+								"private"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "채널 목록 조회",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/channels/eb70d07b-c983-4549-bcb8-354800771bb5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"channels",
+								"eb70d07b-c983-4549-bcb8-354800771bb5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "공개 채널 수정",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "newName",
+									"value": "유저용 채널",
+									"type": "text"
+								},
+								{
+									"key": "newDescription",
+									"value": "유저용 자유채널",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/channels/6303af28-c63a-4f2c-85cb-aada56974f81",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"channels",
+								"6303af28-c63a-4f2c-85cb-aada56974f81"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "채널 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/channels/31b8c2de-4a43-43c9-a67e-9fcd9c8fa04a",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"channels",
+								"31b8c2de-4a43-43c9-a67e-9fcd9c8fa04a"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "메세지 API",
+			"item": [
+				{
+					"name": "메시지 생성",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "profileId",
+									"value": "eb70d07b-c983-4549-bcb8-354800771bb5",
+									"type": "text"
+								},
+								{
+									"key": "authorId",
+									"value": "eb70d07b-c983-4549-bcb8-354800771bb5",
+									"type": "text"
+								},
+								{
+									"key": "channelId",
+									"value": "3a156338-bc50-4efd-ae7f-9feb52ac98db",
+									"type": "text"
+								},
+								{
+									"key": "content",
+									"value": "mvc패턴입니다.",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 조회",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/messages/2d138e72-3faf-4908-8428-d3803dc1ed91",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								"2d138e72-3faf-4908-8428-d3803dc1ed91"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 수정",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "newContent",
+									"value": "사진 보이시죠? mvc패턴에 대한 그림입니다.",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/messages/a0745eaa-f35f-43a4-bf74-ec1734310903",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								"a0745eaa-f35f-43a4-bf74-ec1734310903"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/messages/578df5a2-d24b-48b4-85f5-42c99e877c28",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"messages",
+								"578df5a2-d24b-48b4-85f5-42c99e877c28"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "메시지 수신 API",
+			"item": [
+				{
+					"name": "수신 정보 생성",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "userId",
+									"value": "eb70d07b-c983-4549-bcb8-354800771bb5",
+									"type": "text"
+								},
+								{
+									"key": "channelId",
+									"value": "169b3ce9-fb57-4d5b-86ae-0b714f8d0948",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/read-status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"read-status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "수신 정보 수정",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"eb70d07b-c983-4549-bcb8-354800771bb5\",\n  \"channelId\": \"169b3ce9-fb57-4d5b-86ae-0b714f8d0948\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/read-status/update",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"read-status",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "수신 정보 전체 조회",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/read-status/29b42022-378e-429b-967a-0c338323dabf",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"read-status",
+								"29b42022-378e-429b-967a-0c338323dabf"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "파일 다운로드 API",
+			"item": [
+				{
+					"name": "파일1개 조회",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/binary-contents/eb70d07b-c983-4549-bcb8-354800771bb5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"binary-contents",
+								"eb70d07b-c983-4549-bcb8-354800771bb5"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "파일 여러개 조회",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/binary-contents/batch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"binary-contents",
+								"batch"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "default"
+		}
+	]
+}
