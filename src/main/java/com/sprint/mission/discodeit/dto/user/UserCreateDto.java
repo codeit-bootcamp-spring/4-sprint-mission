@@ -6,18 +6,17 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
 public class UserCreateDto {
     @NotBlank
-    private String username;
+    private final String username;
 
     @Email(message = "Invalid email")
     @NotBlank
-    private String email;
+    private final String email;
 
     @NotBlank
-    private String password;
+    private final String password;
 
-    private BinaryContentCreateDto binaryContent;
+    private final BinaryContentCreateDto binaryContent;
 }

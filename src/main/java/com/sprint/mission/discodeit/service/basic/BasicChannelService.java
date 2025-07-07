@@ -11,7 +11,6 @@ import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -19,7 +18,6 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Validated
 public class BasicChannelService implements ChannelService {
     private final ChannelRepository channelRepository;
     private final ReadStatusRepository readStatusRepository;

@@ -39,32 +39,6 @@ public class FileReadStatusRepository implements ReadStatusRepository {
         }
     }
 
-    /**
-     * 직렬화
-     */
-    private void writeToFile(Map<UUID, ReadStatus> map) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(filePath))) {
-            oos.writeObject(map);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write ReadStatus file", e);
-        }
-    }
-
-    /**
-     * 역직렬화
-     */
-    private Map<UUID, ReadStatus> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, ReadStatus>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read ReadStatus file", e);
-        }
-    }
-
     @Override
     public ReadStatus save(ReadStatus readStatus) {
         Map<UUID, ReadStatus> all = readFromFile();
@@ -142,5 +116,31 @@ public class FileReadStatusRepository implements ReadStatusRepository {
 
     private List<ReadStatus> findAll() {
         return new ArrayList<>(readFromFile().values());
+    }
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, ReadStatus> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write ReadStatus file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, ReadStatus> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, ReadStatus>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read ReadStatus file", e);
+        }
     }
 }

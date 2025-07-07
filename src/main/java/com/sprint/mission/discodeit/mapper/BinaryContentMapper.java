@@ -2,10 +2,11 @@ package com.sprint.mission.discodeit.mapper;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateDto;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentResponseDto;
-import com.sprint.mission.discodeit.dto.message.MessageResponseDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 
 @Component
@@ -13,11 +14,15 @@ public class BinaryContentMapper {
     /**
      * BinaryContentCreateDto → BinaryContent 엔티티 변환
      */
-    public BinaryContent toEntity(BinaryContentCreateDto dto) {
-        return new BinaryContent(
-                dto.getBytes(),
-                dto.getType()
-        );
+    public BinaryContent toEntity(BinaryContentCreateDto dto) throws IOException {
+        try {
+            return new BinaryContent(
+                    dto.getFile().getBytes(),
+                    dto.getType()
+            );
+        } catch (IOException e) {
+            throw new UncheckedIOException("멀티파트파일에서 바이트를 읽지 못했습니다.", e);
+        }
     }
 
     /**

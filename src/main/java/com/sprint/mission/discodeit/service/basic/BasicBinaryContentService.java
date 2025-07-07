@@ -8,14 +8,14 @@ import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Validated
 public class BasicBinaryContentService implements BinaryContentService {
     private final BinaryContentRepository binaryContentRepository;
 
@@ -23,7 +23,12 @@ public class BasicBinaryContentService implements BinaryContentService {
 
     @Override
     public BinaryContentResponseDto create(BinaryContentCreateDto binaryContentCreateDto) {
-        BinaryContent createContent = binaryContentMapper.toEntity(binaryContentCreateDto);
+        BinaryContent createContent = null;
+        try {
+            createContent = binaryContentMapper.toEntity(binaryContentCreateDto);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         binaryContentRepository.save(createContent);
         return binaryContentMapper.toDto(createContent);
     }

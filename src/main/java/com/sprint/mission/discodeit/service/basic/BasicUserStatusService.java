@@ -10,7 +10,6 @@ import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -18,7 +17,6 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Validated
 public class BasicUserStatusService implements UserStatusService {
     private final UserStatusRepository userStatusRepository;
     private final UserRepository userRepository;

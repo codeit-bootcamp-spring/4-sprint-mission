@@ -4,7 +4,6 @@ import com.sprint.mission.discodeit.dto.readStsuts.ReadStatusResponseDto;
 import com.sprint.mission.discodeit.dto.user.UserCreateDto;
 import com.sprint.mission.discodeit.dto.user.UserResponseDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateDto;
-import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
 import org.springframework.stereotype.Component;

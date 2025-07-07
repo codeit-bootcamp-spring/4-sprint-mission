@@ -37,31 +37,6 @@ public class FileChannelRepository implements ChannelRepository {
         }
     }
 
-    /**
-     * 직렬화
-     */
-    private void writeToFile(Map<UUID, Channel> map) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(filePath))) {
-            oos.writeObject(map);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write Channel file", e);
-        }
-    }
-    /**
-     * 역직렬화
-     */
-    private Map<UUID, Channel> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, Channel>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read Channel file", e);
-        }
-    }
-
     @Override
     public Channel save(Channel channel) {
         Map<UUID, Channel> all = readFromFile();
@@ -98,6 +73,32 @@ public class FileChannelRepository implements ChannelRepository {
         Map<UUID, Channel> all = readFromFile();
         if (all.remove(id) != null) {
             writeToFile(all);
+        }
+    }
+
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, Channel> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write Channel file", e);
+        }
+    }
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, Channel> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, Channel>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read Channel file", e);
         }
     }
 }

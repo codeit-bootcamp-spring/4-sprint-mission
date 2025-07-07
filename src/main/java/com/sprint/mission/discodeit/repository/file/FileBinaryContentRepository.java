@@ -39,32 +39,6 @@ public class FileBinaryContentRepository implements BinaryContentRepository {
         }
     }
 
-    /**
-     * 직렬화
-     */
-    private void writeToFile(Map<UUID, BinaryContent> map) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(filePath))) {
-            oos.writeObject(map);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write binary content file", e);
-        }
-    }
-
-    /**
-     * 역직렬화
-     */
-    private Map<UUID, BinaryContent> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, BinaryContent>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read binary content file", e);
-        }
-    }
-
     @Override
     public BinaryContent save(BinaryContent binaryContent) {
         Map<UUID, BinaryContent> all = readFromFile();
@@ -101,6 +75,33 @@ public class FileBinaryContentRepository implements BinaryContentRepository {
         Map<UUID, BinaryContent> all = readFromFile();
         if (all.remove(id) != null) {
             writeToFile(all);
+        }
+    }
+
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, BinaryContent> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write binary content file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, BinaryContent> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, BinaryContent>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read binary content file", e);
         }
     }
 }

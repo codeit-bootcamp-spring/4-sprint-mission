@@ -1,9 +1,12 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateDto;
 import com.sprint.mission.discodeit.dto.message.MessageCreateDto;
 import com.sprint.mission.discodeit.dto.message.MessageResponseDto;
 import com.sprint.mission.discodeit.dto.message.MessageUpdateDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.mapper.MessageMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
@@ -12,15 +15,13 @@ import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Validated
 public class BasicMessageService implements MessageService {
     private final MessageRepository messageRepository;
     private final ChannelRepository channelRepository;
@@ -28,6 +29,7 @@ public class BasicMessageService implements MessageService {
     private final BinaryContentRepository binaryContentRepository;
 
     private final MessageMapper messageMapper;
+    private final BinaryContentMapper binaryContentMapper;
 
     @Override
     public MessageResponseDto create(MessageCreateDto createMessageDto) {
@@ -35,6 +37,12 @@ public class BasicMessageService implements MessageService {
         validateAuthorExists(createMessageDto.getAuthorId());
 
         Message message = messageMapper.toEntity(createMessageDto);
+        try {
+            handleAttachments(message, createMessageDto.getAttachments());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
         messageRepository.save(message);
         return messageMapper.toDto(message);
     }
@@ -54,6 +62,16 @@ public class BasicMessageService implements MessageService {
     @Override
     public MessageResponseDto update(MessageUpdateDto updateMessageDto) {
         Message message = requireMessage(updateMessageDto.getId());
+
+        List<BinaryContentCreateDto> atts = updateMessageDto.getAttachments();
+        if (atts != null && !atts.isEmpty()) {
+            deleteExistingAttachments(message);
+            try {
+                handleAttachments(message, atts);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
         messageMapper.updateEntity(updateMessageDto, message);
         messageRepository.save(message);
         return messageMapper.toDto(message);
@@ -119,5 +137,31 @@ public class BasicMessageService implements MessageService {
     private Message requireMessage(UUID messageId) {
         return messageRepository.findById(messageId)
                 .orElseThrow(() -> new NoSuchElementException("Message with id " + messageId + " not found"));
+    }
+
+    private void handleAttachments(Message message, List<BinaryContentCreateDto> attachments) throws IOException {
+        if (attachments == null || attachments.isEmpty()) {
+            return;
+        }
+        List<UUID> ids = new ArrayList<>();
+        for (BinaryContentCreateDto bcDto : attachments) {
+            BinaryContent bc = binaryContentMapper.toEntity(bcDto);
+            binaryContentRepository.save(bc);
+            ids.add(bc.getId());
+        }
+        message.changeAttachmentIds(ids);
+    }
+
+
+    /**
+     * 메시지에 이미 연결된 attachmentIds를 모두 삭제합니다.
+     */
+    private void deleteExistingAttachments(Message message) {
+        List<UUID> oldIds = message.getAttachmentIds();
+        if (oldIds != null) {
+            for (UUID oldId : oldIds) {
+                binaryContentRepository.deleteById(oldId);
+            }
+        }
     }
 }

@@ -1,9 +1,7 @@
 package com.sprint.mission.discodeit.dto.message;
 
-import com.sprint.mission.discodeit.entity.Message;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.time.Instant;
@@ -12,14 +10,13 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-@NoArgsConstructor
 @ToString
 public class MessageResponseDto {
-    UUID id;
-    UUID channelId;
-    UUID authorId;
-    String content;
-    List<UUID> attachmentIds;
-    Instant createdAt;
-    Instant updatedAt;
+    private final UUID id;
+    private final UUID channelId;
+    private final UUID authorId;
+    private final String content;
+    private final List<UUID> attachmentIds;
+    private final Instant createdAt;
+    private final Instant updatedAt;
 }

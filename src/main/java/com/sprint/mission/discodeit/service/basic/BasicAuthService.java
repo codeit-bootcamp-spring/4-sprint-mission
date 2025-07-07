@@ -10,11 +10,9 @@ import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
-@Validated
 public class BasicAuthService implements AuthService {
     private final UserRepository userRepository;
     private final UserStatusRepository userStatusRepository;

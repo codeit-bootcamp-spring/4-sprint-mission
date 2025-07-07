@@ -10,8 +10,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @ToString
 public class ChannelResponseDto {
     private UUID id;

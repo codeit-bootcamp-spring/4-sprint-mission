@@ -6,26 +6,24 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
 public class UserUpdateDto {
     @NotNull
-    private UUID id;
+    private final UUID id;
 
     @NotBlank
-    private String username;
+    private final String username;
 
     @Email
     @NotBlank
-    private String email;
+    private final String email;
 
     @NotBlank
-    private String password;
+    private final String password;
 
-    private BinaryContentCreateDto binaryContent;
+    private final BinaryContentCreateDto binaryContent;
 }

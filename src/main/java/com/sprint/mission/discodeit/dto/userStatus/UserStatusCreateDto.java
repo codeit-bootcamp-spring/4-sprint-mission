@@ -9,8 +9,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-@NoArgsConstructor
 public class UserStatusCreateDto {
     @NotNull
-    UUID userId;
+    private final UUID userId;
 }

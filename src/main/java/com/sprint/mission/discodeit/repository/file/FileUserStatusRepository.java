@@ -38,33 +38,6 @@ public class FileUserStatusRepository implements UserStatusRepository {
         }
     }
 
-    /**
-     * 직렬화
-     */
-    private Map<UUID, UserStatus> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, UserStatus>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read user status file", e);
-        }
-    }
-
-    /**
-     * 역직렬화
-     */
-    private void writeToFile(Map<UUID, UserStatus> map) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(filePath))) {
-            oos.writeObject(map);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write user status file", e);
-        }
-    }
-
-
     @Override
     public UserStatus save(UserStatus userStatus) {
         Map<UUID, UserStatus> all = readFromFile();
@@ -112,5 +85,32 @@ public class FileUserStatusRepository implements UserStatusRepository {
     @Override
     public void deleteByUserId(UUID userId) {
         findByUserId(userId).ifPresent(u -> deleteById(u.getId()));
+    }
+
+
+    /**
+     * 직렬화
+     */
+    private Map<UUID, UserStatus> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, UserStatus>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read user status file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private void writeToFile(Map<UUID, UserStatus> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write user status file", e);
+        }
     }
 }

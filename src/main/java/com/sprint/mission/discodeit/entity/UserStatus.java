@@ -43,6 +43,6 @@ public class UserStatus implements Serializable {
     public boolean isOnline() {
         // 마지막 접속 시간이 현재 시간으로부터 5분 이내이면 현재 접속 중인 유저로 간주
         return lastConnectedAt != null &&
-                lastConnectedAt.isBefore(Instant.now().plusSeconds(300));
+                lastConnectedAt.isAfter(Instant.now().minusSeconds(300));
     }
 }

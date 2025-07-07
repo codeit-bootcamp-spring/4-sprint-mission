@@ -36,32 +36,6 @@ public class FileUserRepository implements UserRepository {
         }
     }
 
-    /**
-     * 직렬화
-     */
-    private void writeToFile(Map<UUID, User> map) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(filePath))) {
-            oos.writeObject(map);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write user file", e);
-        }
-    }
-
-    /**
-     * 역직렬화
-     */
-    private Map<UUID, User> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, User>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read user file", e);
-        }
-    }
-
     @Override
     public User save(User user) {
         Map<UUID, User> all = readFromFile();
@@ -110,4 +84,32 @@ public class FileUserRepository implements UserRepository {
             writeToFile(all);
         }
     }
+
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, User> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write user file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, User> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, User>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read user file", e);
+        }
+    }
+
 }

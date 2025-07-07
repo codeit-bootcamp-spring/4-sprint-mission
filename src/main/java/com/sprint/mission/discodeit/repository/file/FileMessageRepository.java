@@ -35,32 +35,6 @@ public class FileMessageRepository implements MessageRepository {
         }
     }
 
-    /**
-     * 직렬화
-     */
-    private void writeToFile(Map<UUID, Message> map) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                Files.newOutputStream(filePath))) {
-            oos.writeObject(map);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write Message file", e);
-        }
-    }
-
-    /**
-     * 역직렬화
-     */
-    private Map<UUID, Message> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, Message>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read Message file", e);
-        }
-    }
-
     @Override
     public Message save(Message message) {
         Map<UUID, Message> all = readFromFile();
@@ -106,5 +80,32 @@ public class FileMessageRepository implements MessageRepository {
                 .stream()
                 .map(Message::getId)
                 .forEach(this::deleteById);
+    }
+
+
+    /**
+     * 직렬화
+     */
+    private void writeToFile(Map<UUID, Message> map) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                Files.newOutputStream(filePath))) {
+            oos.writeObject(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write Message file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, Message> readFromFile() {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, Message>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to read Message file", e);
+        }
     }
 }

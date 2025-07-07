@@ -25,9 +25,12 @@ public class ChannelMapper {
     /**
      * MessageUpdateDto → 기존 Channel 엔티티 덮어쓰기
      */
-    public void updateEntity(ChannelUpdateDto dto, Channel channel) {
+    public void updateEntity(ChannelUpdateDto dto, Channel channel) throws IllegalArgumentException {
         if (channel.getType() != dto.getType()) {
             throw new IllegalArgumentException("채널 타입은 변경할 수 없습니다.");
+        }
+        if (dto.getType() == ChannelType.PRIVATE) {
+            throw new IllegalArgumentException("PRIVATE 채널은 수정할 수 없습니다.");
         }
         if (channel.getType() == ChannelType.PUBLIC) {
             if (dto.getName() != null)        channel.updateName(dto.getName());
