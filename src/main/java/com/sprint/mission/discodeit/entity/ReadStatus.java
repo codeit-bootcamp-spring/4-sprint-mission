@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor(force=true)
 public class ReadStatus {
@@ -17,17 +16,29 @@ public class ReadStatus {
     // 사용자별 각 채널에 읽지 않은 메시지를 확인하기 위해 활용한다
 
     private final UUID id;
+    private Instant lastReadAt; // 마지막으로 메시지를 읽은 시간
+
     private final Instant createdAt;
     private Instant updatedAt;
 
     private final UUID userId;
-    private final UUID channelID;
+    private final UUID channelId;
 
-    public ReadStatus(UUID id, UUID userId, UUID channelID) {
-        this.id = id;
+    public ReadStatus(UUID id, UUID userId, UUID channelId, Instant lastReadAt) {
+        this.id = UUID.randomUUID();
+        this.lastReadAt = lastReadAt;
         this.createdAt = Instant.now();
+
         this.userId = userId;
-        this.channelID = channelID;
+        this.channelId = channelId;
+    }
+
+    public void update(Instant newLastReadAt) {
+        newLastReadAt = Instant.now();
+        if(newLastReadAt.isBefore(lastReadAt)) {
+            lastReadAt = newLastReadAt;
+            this.updatedAt = Instant.now();
+        }
     }
 
 }

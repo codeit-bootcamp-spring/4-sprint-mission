@@ -31,13 +31,12 @@ public class FileChannelRepository implements ChannelRepository {
             }
         }
     }
-    @Bean
+
     private Path resolvePath(UUID id) {
         return Directory.resolve(id + Extension);
     }
 
     @Override
-    @Bean
     public Channel save(Channel channel) { // outStream을 쓴다. channel에 저장함
 
         Path path = resolvePath(channel.getId());
@@ -53,7 +52,6 @@ public class FileChannelRepository implements ChannelRepository {
     }
 
     @Override
-    @Bean
     public Optional<Channel> findId(UUID id) { // 아이디 찾기
         Channel channelNullable = null;
         Path path = resolvePath(id);
@@ -69,7 +67,6 @@ public class FileChannelRepository implements ChannelRepository {
     }
 
     @Override
-    @Bean
     public List<Channel> findAll() {
         try{
             return Files.list(Directory) // ???
@@ -91,14 +88,12 @@ public class FileChannelRepository implements ChannelRepository {
     }
 
     @Override
-    @Bean
     public boolean existsId(UUID id) {
         Path path = resolvePath(id);
         return Files.exists(path);
     }
 
     @Override
-    @Bean
     public void deleteId(UUID id) {
 
         Path path = resolvePath(id);

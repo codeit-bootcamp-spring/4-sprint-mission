@@ -23,7 +23,6 @@ public class FileUserRepository implements UserRepository {
     private final Path DIRECTORY;
     private final String EXTENSION = ".ser";
 
-
     public FileUserRepository() {
         this.DIRECTORY = Paths.get(System.getProperty("user.dir"), "file-data-map", User.class.getSimpleName());
         if(!Files.exists(DIRECTORY)) {
@@ -35,11 +34,9 @@ public class FileUserRepository implements UserRepository {
         }
     }
 
-
     private Path resolvePath(UUID id) { // 여기에 resolve() 메서드를 넣는다
         return DIRECTORY.resolve(id + EXTENSION); 
     }
-
 
     @Override
     public User save(User user) {
@@ -54,7 +51,6 @@ public class FileUserRepository implements UserRepository {
         }
         return user;
     }
-
 
     @Override
     public Optional<User> findUser(UUID id) {
@@ -75,7 +71,6 @@ public class FileUserRepository implements UserRepository {
 
         return Optional.ofNullable(user);
     }
-
 
     @Override
     public List<User> findAll() {
@@ -98,13 +93,11 @@ public class FileUserRepository implements UserRepository {
         }
     }
 
-
     @Override
     public boolean existsUser(UUID id) {
         Path path = resolvePath(id);
         return Files.exists(path);
     }
-
 
     @Override
     public void deleteUser(UUID id) {

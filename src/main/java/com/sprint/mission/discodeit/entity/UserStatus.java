@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor(force = true)
 public class UserStatus {
@@ -20,12 +19,22 @@ public class UserStatus {
     private Instant updatedAt;
     private boolean online = true;
     private boolean offline = false;
+    public Instant lastActivatedAt;
 
-    private final UUID userId;
-    public UserStatus(UUID id, UUID userId) {
-        this.id = id;
+    private final UUID userId; // User의 UUID
+
+    public UserStatus(UUID userId, Instant lastActivatedAt) {
+        this.id = UUID.randomUUID();
         this.createdAt = Instant.now();
         this.userId = userId;
+        this.lastActivatedAt = lastActivatedAt;
+    }
+
+    public void update(Instant lastActivatedAt) {
+        if(lastActivatedAt != null && !lastActivatedAt.equals(this.lastActivatedAt)) {
+            this.lastActivatedAt = lastActivatedAt;
+            this.updatedAt = Instant.now();
+        }
     }
 
     // 마지막 접속 시간을 기준으로 현재 로그인한 유저로 판단할 수 있는 메소드 정의

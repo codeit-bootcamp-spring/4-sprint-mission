@@ -1,9 +1,19 @@
 package com.sprint.mission.discodeit.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.UUID;
 
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class Channel implements Serializable {
 
     @Serial
@@ -11,35 +21,23 @@ public class Channel implements Serializable {
 
     private final UUID id; // 채널 uuid
     private String channelName; // 채널의 이름
-    private final Long createdAt;
-    private Long updatedAt;
+    private ChannelType channelType; // 채널 타입
+    private final Instant createdAt;
+    private Instant updatedAt;
     // 메뉴 안에서도 메세지를 입력할 수 있어야한다
 
-    public Channel(UUID channelId, String channelName) {
+    public Channel(ChannelType channelType, String channelName) {
         this.channelName = channelName;
-        id = UUID.randomUUID();
-        createdAt = System.currentTimeMillis();
+        this.channelType = channelType;
+        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getChannelName() {
-        return channelName;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void updateChannel(String newChannelName) {
-            channelName = newChannelName;
-            updatedAt = System.currentTimeMillis();
+    public void update(String newChannelName) {
+        if(newChannelName != null && !newChannelName.equals(this.channelName)) {
+            this.channelName = newChannelName;
+            this.updatedAt = Instant.now();
+        }
     }
 
     public String toCSV() {

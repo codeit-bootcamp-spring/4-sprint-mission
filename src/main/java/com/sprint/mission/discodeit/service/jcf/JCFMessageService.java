@@ -1,7 +1,11 @@
 package com.sprint.mission.discodeit.service.jcf;
 
-import com.sprint.mission.discodeit.Service.MessageService;
+import com.sprint.mission.discodeit.dto.data.MessageCreateDto;
+import com.sprint.mission.discodeit.dto.data.MessageResponseDto;
+import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
+import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +22,10 @@ public class JCFMessageService implements MessageService {
     }
 
     @Override
-    public Message createMessage(String message) {
-        Message newMessage = new Message(message);
+    public MessageResponseDto createMessage(MessageCreateRequest messageCreateRequest) {
+        UUID channelId = messageCreateRequest.channelId();
+        UUID userId = createDto.userId();
+        MessageCreateDto newMessage = new Message(createDto.content(), channelId, userId);
         messageList.put(newMessage.getId(), newMessage);
         return newMessage;
     }
@@ -41,7 +47,7 @@ public class JCFMessageService implements MessageService {
     }
 
     @Override
-    public Message updateMessage(UUID id, String newMessage) {
+    public MessageResponseDto updateMessage(UUID id, MessageUpdateRequest messageUpdateRequest) {
         Message updatedMessage = null;
         if(newMessage != null && !newMessage.equals(updatedMessage.getContent())) {
             updatedMessage = messageList.get(id);

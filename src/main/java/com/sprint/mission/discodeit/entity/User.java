@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor(force=true)// 클래스에 필수 필드가 포함되어 있다. NoArgsContructor를 강제 적용해야한다.
 public class User implements Serializable {
@@ -21,11 +20,12 @@ public class User implements Serializable {
     private static final long serialVersionUID = 1L; // 직렬화
 
     private final UUID id;
+    private final Instant createdAt;
+    private Instant updatedAt;
+
     private String nickName;
     private String email;
     private String password;
-    private final Instant createdAt;
-    private Instant updatedAt;
 
     public User(String nickName, String email, String password) {
         this.id = UUID.randomUUID();
@@ -35,9 +35,20 @@ public class User implements Serializable {
         this.password = password;
     }
 
-    public void updateNickName(String newNickname) {
-        nickName = newNickname;
-        this.updatedAt = Instant.now();
+    public void update(String newNickName, String newEmail, String newPassword) {
+        if(newNickName != null && !newNickName.equals(this.nickName)) {
+            this.nickName = newNickName;
+            this.updatedAt = Instant.now();
+        }
+
+        if(newEmail != null && !newEmail.equals(this.email)) {
+            this.email = newEmail;
+            this.updatedAt = Instant.now();
+        }
+        if(newPassword != null && !newPassword.equals(this.password)) {
+            this.password = newPassword;
+            this.updatedAt = Instant.now();
+        }
     }
 
     public String toCSV() {

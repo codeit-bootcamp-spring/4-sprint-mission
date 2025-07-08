@@ -1,9 +1,18 @@
 package com.sprint.mission.discodeit.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.UUID;
 
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class Message implements Serializable {
 
     @Serial
@@ -12,58 +21,29 @@ public class Message implements Serializable {
     private final UUID id; // 이 id는 메세지의 id이다
     private final UUID channelId; // 메세지가 있는 채널
     private String content; // 메세지 내용
-    
-    private final UUID messageId; // 이건 작성자의 id이다
-    private final Long createdAt;
-    private Long updatedAt;
+    private final Instant createdAt;
+    private Instant updatedAt;
 
-    // 생성자
-    // 메세지를 입력받으면 메세지를 저장하고, 입력된 날짜를 생성한다
+    private final UUID userId; // 이건 작성자의 id이다
 
-    // 누가, 어느 채널에서, 어떤 내용을 썼는지 입력받는다. setter
-    public Message(UUID messageId, UUID channelId, String content) { // public으로 만들어야한다
-        this.messageId = messageId;
+
+    public Message(String content, UUID channelId, UUID userId) {
+        this.id = UUID.randomUUID();
         this.channelId = channelId;
         this.content = content;
+        this.createdAt = Instant.now();
 
-        this.id = UUID.randomUUID();
-        this.createdAt = System.currentTimeMillis();
+        this.userId = userId;
     }
 
-    // getter 함수 정의
-
-    public UUID getMessageId() {
-        return messageId;
-    }
-
-    public UUID getChannelId() {
-        return channelId;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-
-    public long getCreatedAt() {
-        return createdAt;
-    }
-
-    public long getUpdatedAt() {
-        return updatedAt;
-    }
-
-
-    // update 메서드 작성하기(메세지 수정), setter임
-    public void updateContent(String newContent) {
+    public void update(String newContent) { // 메세지 내용 수정하기
+        if(newContent != null && !newContent.equals(this.content)) {
             this.content = newContent;
-            this.updatedAt = System.currentTimeMillis();
+            updatedAt = Instant.now();
+        }
     }
-    
+
+
     public String toCSV() {
         return id + "," + channelId + "," + content + "," + createdAt + "," + updatedAt;
     }

@@ -1,12 +1,13 @@
 package com.sprint.mission.discodeit.service.jcf;
 
-import com.sprint.mission.discodeit.Service.UserService;
-import com.sprint.mission.discodeit.entity.DTO.CreateUserDTO;
-import com.sprint.mission.discodeit.entity.DTO.UpdateUserDTO;
+import com.sprint.mission.discodeit.dto.data.CreateUserDto;
+import com.sprint.mission.discodeit.dto.data.UpdateUserDto;
+import com.sprint.mission.discodeit.dto.data.UserDto;
 import com.sprint.mission.discodeit.entity.Mapper.UpdateUserMapper;
 import com.sprint.mission.discodeit.entity.Mapper.UserMapper;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +15,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-public class JCFUserService  implements UserService {
+public class JCFUserService implements UserService {
 
     private final Map<UUID, User> userList;
     UserMapper userMapper;
@@ -25,12 +26,12 @@ public class JCFUserService  implements UserService {
     }
 
     @Override
-    public CreateUserDTO createUser(User user) {
+    public UserDto createUser(UserDto userDto) {
 
         if(userList.containsValue(user.getEmail()) && userList.containsValue(user.getNickName())) {
-            throw new RuntimeException("중복됩니다.");
+            throw new IllegalArgumentException("중복됩니다.");
         }
-        userStatus = new UserStatus(UUID.randomUUID(), user.getId());
+        userStatus = new UserStatus(user.getId(), userStatus.getLastActivatedAt());
         return userMapper.userCreateDtoToUser(user);
 
     }
@@ -42,7 +43,7 @@ public class JCFUserService  implements UserService {
     //    }
 
     @Override
-    public CreateUserDTO searchUser(UUID id) {
+    public UserDto searchUser(UUID id) {
         User findUser = null;
         if(userList.containsKey(id) && userStatus.nowLogin()) {
             findUser = userList.get(id);
@@ -64,8 +65,8 @@ public class JCFUserService  implements UserService {
 //        return this.userList.values().stream().toList();
 //    }
     @Override
-    public List<CreateUserDTO> searchAll() {
-        List<CreateUserDTO> userDTOList = new ArrayList<>();
+    public List<UserDto> searchAll() {
+        List<CreateUserDto> userDTOList = new ArrayList<>();
         for(User user : userList.values()) {
             if(userStatus.nowLogin()) {
                 userDTOList.add(userMapper.userCreateDtoToUser(userList.get(user)));
@@ -75,7 +76,7 @@ public class JCFUserService  implements UserService {
     }
 
     @Override
-    public UpdateUserDTO updateUser(UUID id, String newNickName) {
+    public UserDto updateUser(UUID id, String newNickName) {
         User updateUser = this.userList.get(id);
         UpdateUserMapper updateUserMapper = null;
         if(newNickName != null && !newNickName.equals(updateUser.getNickName())) {

@@ -1,18 +1,17 @@
-package com.sprint.mission.discodeit.entity.DTO;
+package com.sprint.mission.discodeit.dto.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class CreateUserDTO {
+public class CreateUserDto {
     private String nickName;
     private String email;
-    private BinaryContentDTO binaryContent;
+    private BinaryContentDto binaryContent;
 
-    public CreateUserDTO(String nickName, String email) {
+    public CreateUserDto(String nickName, String email) {
         this.nickName = nickName;
         this.email = email;
     }
-
 }

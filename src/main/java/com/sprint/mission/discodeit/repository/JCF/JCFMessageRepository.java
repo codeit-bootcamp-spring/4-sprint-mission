@@ -1,9 +1,12 @@
-package com.sprint.mission.discodeit.repository;
+package com.sprint.mission.discodeit.repository.JCF;
 
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.repository.MessageRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
-
+@Repository
 public class JCFMessageRepository implements MessageRepository {
 
     private final Map<UUID, Message> messageData;
@@ -24,8 +27,9 @@ public class JCFMessageRepository implements MessageRepository {
     }
 
     @Override
-    public List<Message> findAll() {
-        return this.messageData.values().stream().toList();
+    public List<Message> findAll(UUID id) {
+        return this.messageData.values().stream()
+                .filter(message -> message.getChannelId().equals(id)).toList();
     }
 
     @Override

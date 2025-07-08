@@ -1,4 +1,4 @@
-package com.sprint.mission.discodeit.entity.DTO;
+package com.sprint.mission.discodeit.dto.data;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import lombok.AllArgsConstructor;
@@ -6,12 +6,12 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class UpdateUserDTO {
+public class UpdateUserDto {
     private String nickName;
     private String email;
     private BinaryContent image;
 
-    public UpdateUserDTO(String newNickName, String newEmail) {
+    public UpdateUserDto(String newNickName, String newEmail) {
         this.nickName = newNickName;
         this.email = newEmail;
     }

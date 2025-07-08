@@ -1,7 +1,11 @@
 package com.sprint.mission.discodeit.service.jcf;
 
 import com.sprint.mission.discodeit.Service.ChannelService;
+import com.sprint.mission.discodeit.dto.data.ChannelDto;
+import com.sprint.mission.discodeit.dto.request.PrivateChannelRequest;
+import com.sprint.mission.discodeit.dto.request.PublicChannelRequest;
 import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.service.ChannelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,21 +14,28 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class JCFChannelService implements ChannelService {
-    private final Map<UUID, Channel> channelList;
+    private final Map<UUID, ChannelDto> channelList;
 
     public JCFChannelService() {
         channelList = new HashMap<>();
     }
 
     @Override
-    public Channel createChannel(String channelName) {
-        Channel channel = new Channel(channelName);
+    public ChannelDto createPublic(PublicChannelRequest publicChannelRequest) {
+        Channel channel = new Channel();
         channelList.put(channel.getId(),channel);
         return channel;
     }
 
     @Override
-    public Channel searchChannel(UUID id) {
+    public ChannelDto createPrivate(PrivateChannelRequest privateChannelRequest) {
+        Channel channel = new Channel(privateChannelRequest);
+        channelList.put(channel.getId(),channel);
+        return channel;
+    }
+
+    @Override
+    public ChannelDto findChannel(UUID id) {
         Channel findChannel = null;
         if(channelList.containsKey(id)) {
             findChannel = channelList.get(id);
@@ -33,7 +44,7 @@ public class JCFChannelService implements ChannelService {
     }
 
     @Override
-    public List<Channel> searchAll() {
+    List<ChannelDto> findAllChannels() {
         return channelList.values().stream().toList();
     }
 
@@ -47,6 +58,12 @@ public class JCFChannelService implements ChannelService {
             updatedChannel.setChannelName(newName);
         }
         return updatedChannel;
+    }
+
+    @Override
+    public ChannelDto updatePublicChannel(UUID id, PublicChannelRequest publicChannelRequest) {
+
+        return null;
     }
 
     @Override
