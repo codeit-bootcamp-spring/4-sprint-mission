@@ -1,33 +1,10 @@
 package com.sprint.mission.discodeit;
 import com.sprint.mission.discodeit.config.RepositorySettings;
-import com.sprint.mission.discodeit.dto.AuthService.UserLoginRequestDto;
-import com.sprint.mission.discodeit.dto.AuthService.UserLoginResponseDto;
-import com.sprint.mission.discodeit.dto.BinaryContentService.BinaryContentRequestDto;
-import com.sprint.mission.discodeit.dto.BinaryContentService.BinaryContentResponseDto;
-import com.sprint.mission.discodeit.dto.ChannelService.ChannelResponseDto;
-import com.sprint.mission.discodeit.dto.ChannelService.PrivateChannelRequestDto;
-import com.sprint.mission.discodeit.dto.ChannelService.PublicChannelRequestDto;
-import com.sprint.mission.discodeit.dto.ChannelService.UpdateChannelRequestDto;
-import com.sprint.mission.discodeit.dto.MessageService.MessageRequestDto;
-import com.sprint.mission.discodeit.dto.MessageService.MessageResponseDto;
-import com.sprint.mission.discodeit.dto.MessageService.UpdateMessageRequestDto;
-import com.sprint.mission.discodeit.dto.ReadStatusService.ReadStatusRequestDto;
-import com.sprint.mission.discodeit.dto.ReadStatusService.ReadStatusResponseDto;
-import com.sprint.mission.discodeit.dto.UserService.UpdateUserRequestDto;
-import com.sprint.mission.discodeit.dto.UserService.UserRequestDto;
-import com.sprint.mission.discodeit.dto.UserService.UserResponseDto;
-import com.sprint.mission.discodeit.dto.UserStatusService.UpdateUserStatusDto;
-import com.sprint.mission.discodeit.dto.UserStatusService.UserStatusResponseDto;
-import com.sprint.mission.discodeit.entity.*;
 import com.sprint.mission.discodeit.service.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 @SpringBootApplication
 @EnableConfigurationProperties(RepositorySettings.class)

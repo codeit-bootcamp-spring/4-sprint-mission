@@ -1,7 +1,6 @@
 package com.sprint.mission.discodeit.service.basic;
-import com.sprint.mission.discodeit.dto.BinaryContentService.BinaryContentResponseDto;
-import com.sprint.mission.discodeit.dto.BinaryContentService.BinaryContentResponseDtos;
-import com.sprint.mission.discodeit.dto.BinaryContentService.BinaryContentRequestDto;
+
+import com.sprint.mission.discodeit.dto.BinaryContentDto.*;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
@@ -15,55 +14,52 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class BasicBinaryContentService implements BinaryContentService {
-    private final BinaryContentRepository binaryContentRepository;
-    private final BinaryContentMapper binaryContentMapper;
 
-    @Override
-    public BinaryContentResponseDto create(BinaryContentRequestDto binaryContentRequestDto) {
-         BinaryContent newBinaryContent = binaryContentRepository.save(
-                binaryContentMapper.toBinaryContent(
-                        binaryContentRequestDto.userId(),
-                        binaryContentRequestDto.messageId(),
-                        binaryContentRequestDto.file()
-                )
-        );
+  private final BinaryContentRepository binaryContentRepository;
+  private final BinaryContentMapper binaryContentMapper;
 
-        return binaryContentMapper.toBinaryContentResponseDto(newBinaryContent);
+  @Override
+  public BinaryContentResponse create(BinaryContentRequest binaryContentRequest) {
+
+    String fileName = binaryContentRequest.fileName();
+    byte[] bytes = binaryContentRequest.bytes();
+    String contentType = binaryContentRequest.contentType();
+    BinaryContent binaryContent = new BinaryContent(
+        fileName,
+        (long) bytes.length,
+        contentType,
+        bytes
+    );
+    return binaryContentMapper.toResponseDto(binaryContentRepository.save(binaryContent));
+  }
+
+  @Override
+  public BinaryContentResponse find(UUID binaryContentId) {
+    BinaryContent binaryContent = binaryContentRepository.findById(binaryContentId)
+        .orElseThrow(() -> new NoSuchElementException(
+            "Binary Content with id " + binaryContentId + " not found!"));
+
+    return binaryContentMapper.toResponseDto(binaryContent);
+  }
+
+  @Override
+  public List<BinaryContentResponse> findAllByIdIn(List<UUID> binaryContentIds) {
+    return binaryContentRepository.findAllByIdIn(binaryContentIds).stream()
+        .map(binaryContentMapper::toResponseDto)
+        .toList();
+  }
+
+  @Override
+  public void delete(UUID binaryContentId) {
+    if (!binaryContentRepository.existsById(binaryContentId)) {
+      throw new NoSuchElementException("BinaryContent with id " + binaryContentId + " not found!");
     }
+    binaryContentRepository.deleteById(binaryContentId);
+  }
 
-//    @Override
-//    public BinaryContentResponseDto find(UUID binaryContentId) {
-//        BinaryContent binaryContent =  binaryContentRepository.findById(binaryContentId)
-//                .orElseThrow(() -> new NoSuchElementException("Binary Content with id " + binaryContentId + " not found!"));
-//
-//        return binaryContentMapper.toBinaryContentResponseDto(binaryContent);
-//
-//    }
-
-    // 심화 변경사항
-    @Override
-    public BinaryContent find(UUID binaryContentId) {
-        return binaryContentRepository.findById(binaryContentId)
-                .orElseThrow(() -> new NoSuchElementException("Binary Content with id " + binaryContentId + " not found!"));
-    }
-
-    @Override
-    public BinaryContentResponseDtos findAllByIdIn(List<UUID> binaryContentIds) {
-        List<BinaryContent> binaryContents = binaryContentRepository.findAllByIdIn(binaryContentIds);
-        return binaryContentMapper.toBinaryContentResponseDtos(binaryContents);
-    }
-
-    @Override
-    public void delete(UUID binaryContentId) {
-        if (!binaryContentRepository.existsById(binaryContentId)) {
-            throw new NoSuchElementException("BinaryContent with id " + binaryContentId + " not found!");
-        }
-        binaryContentRepository.deleteById(binaryContentId);
-    }
-
-    @Override
-    public void deleteAll() {
-        binaryContentRepository.deleteAll();
-    }
+  @Override
+  public void deleteAll() {
+    binaryContentRepository.deleteAll();
+  }
 
 }

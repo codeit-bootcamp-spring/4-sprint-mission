@@ -1,36 +1,47 @@
 package com.sprint.mission.discodeit.mapper;
-import com.sprint.mission.discodeit.dto.UserStatusService.UserStatusRequestDto;
-import com.sprint.mission.discodeit.dto.UserStatusService.UserStatusResponseDto;
-import com.sprint.mission.discodeit.dto.UserStatusService.UserStatusResponseDtos;
+
+import com.sprint.mission.discodeit.dto.UserStatusDto.*;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.entity.UserStatus.UserState;
 import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
 public class UserStatusMapper {
 
-    // Request
-    public UserStatus toUserStatus(UserStatusRequestDto userStatusRequestDto) {
-        return new UserStatus(userStatusRequestDto.userId());
-    }
+  // Request
+  public UserStatus toUserStatus(UserStatusRequest userStatusRequest) {
+    return new UserStatus(userStatusRequest.userId());
+  }
 
-    // Response
-    public UserStatusResponseDto toUserStatusResponseDto(UserStatus userStatus) {
-        return new UserStatusResponseDto(
-                userStatus.getId(),
-                userStatus.getUserId(),
-                userStatus.getLastActiveTime(),
-                userStatus.getStatus()
-        );
-    }
+  // Response
+  public UserStatusResponse toUserStatusResponseDto(UserStatus userStatus) {
+    return new UserStatusResponse(
+        userStatus.getId(),
+        userStatus.getUserId(),
+        userStatus.getLastActiveTime(),
+        userStatus.getStatus()
+    );
+  }
 
-    // Response
-    public UserStatusResponseDtos toUserStatusResponseDtos(List<UserStatus> userStatusResponseDtos) {
-        return new UserStatusResponseDtos(
-                userStatusResponseDtos.stream()
-                        .map(this::toUserStatusResponseDto)
-                        .toList()
-        );
-    }
+  public UserStatusUpdateResponse toUserStatusUpdateResponse(UserStatus userStatus) {
+    return new UserStatusUpdateResponse(
+        userStatus.getCreatedAt(),
+        userStatus.getId(),
+        userStatus.getLastActiveTime(),
+        userStatus.getStatus() == UserState.ONLINE,
+        userStatus.getUpdatedAt(),
+        userStatus.getUserId()
+    );
+  }
+
+  // Response
+  public UserStatusResponses toUserStatusResponseDtos(List<UserStatus> userStatusResponseDtos) {
+    return new UserStatusResponses(
+        userStatusResponseDtos.stream()
+            .map(this::toUserStatusResponseDto)
+            .toList()
+    );
+  }
 
 }

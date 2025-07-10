@@ -6,8 +6,8 @@ build/
 !**/src/test/**/build/
 
 ### TEST data ###
-/file-data-map
-/file-directory
+/file-data-map/
+/file-directory/
 
 ### STS ###
 .apt_generated
