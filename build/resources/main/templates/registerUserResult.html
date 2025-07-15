@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>사용자 등록 결과</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    img { max-width: 200px; max-height: 200px; margin-top: 10px; }
+    .button {
+      display: inline-block;
+      padding: 10px 15px;
+      margin-top: 20px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>사용자 등록 결과</h2>
+
+<p><strong>사용자 ID:</strong> <span th:text="${user.userId}">userId</span></p>
+<p><strong>사용자 이름:</strong> <span th:text="${user.userName}">userName</span></p>
+<p><strong>이메일:</strong> <span th:text="${user.userEmail}">email</span></p>
+<p><strong>경로:</strong> <span th:text="${user.picturePath}">email</span></p>
+
+<div>
+  <strong>프로필 이미지:</strong><br/>
+
+  <img th:if="${user.picturePath != null}"
+       th:src="@{${user.picturePath}}"
+       alt="프로필 이미지" />
+
+  <p th:if="${user.picturePath == null}">
+    이미지를 등록하지 않았습니다.
+  </p>
+</div>
+<a class="button" href="/v1/discodeit/users">다시 등록하기</a>
+
+</body>
+</html>
