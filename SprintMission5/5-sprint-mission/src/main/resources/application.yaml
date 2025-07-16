@@ -1,0 +1,11 @@
+discodeit:
+  repository:
+    type: file   # jcf | file
+    file-directory: .discodeit
+spring:
+  web:
+    resources:
+      static-locations: classpath:/static/
+#springdoc:
+#  swagger-ui:
+#    url: /docs/openapi.yaml
