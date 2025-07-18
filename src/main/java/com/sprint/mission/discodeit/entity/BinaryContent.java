@@ -1,6 +1,5 @@
 package com.sprint.mission.discodeit.entity;
 
-import com.sprint.mission.discodeit.dto.data.BinaryContentDto;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -27,8 +26,8 @@ public class BinaryContent implements Serializable {
         this.bytes = bytes;
     }
 
-    public BinaryContentDto toDto(BinaryContent binaryContent){
-        return new BinaryContentDto(
+    public com.sprint.mission.discodeit.dto.data.BinaryContent toDto(BinaryContent binaryContent){
+        return new com.sprint.mission.discodeit.dto.data.BinaryContent(
                 binaryContent.getId(),
                 binaryContent.getCreatedAt(),
                 binaryContent.getFileName(),

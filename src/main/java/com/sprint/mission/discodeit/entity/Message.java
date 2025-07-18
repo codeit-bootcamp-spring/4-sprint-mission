@@ -1,6 +1,5 @@
 package com.sprint.mission.discodeit.entity;
 
-import com.sprint.mission.discodeit.dto.data.MessageDto;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -41,8 +40,8 @@ public class Message implements Serializable {
         }
     }
 
-    public MessageDto toDto(Message message){
-        return new MessageDto(
+    public com.sprint.mission.discodeit.dto.data.Message toDto(Message message){
+        return new com.sprint.mission.discodeit.dto.data.Message(
                 message.getId(),
                 message.getCreatedAt(),
                 message.getUpdatedAt(),

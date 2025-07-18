@@ -1,9 +1,8 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.data.ReadStatusDto;
+import com.sprint.mission.discodeit.dto.data.ReadStatus;
 import com.sprint.mission.discodeit.dto.request.ReadStatusCreateRequest;
 import com.sprint.mission.discodeit.dto.request.ReadStatusUpdateRequest;
-import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
@@ -24,7 +23,7 @@ public class BasicReadStatusService implements ReadStatusService {
     private final ChannelRepository channelRepository;
 
     @Override
-    public ReadStatus create(ReadStatusCreateRequest request) {
+    public com.sprint.mission.discodeit.entity.ReadStatus create(ReadStatusCreateRequest request) {
         UUID userId = request.userId();
         UUID channelId = request.channelId();
 
@@ -40,26 +39,26 @@ public class BasicReadStatusService implements ReadStatusService {
         }
 
         Instant lastReadAt = request.lastReadAt();
-        ReadStatus readStatus = new ReadStatus(userId, channelId, lastReadAt);
+        com.sprint.mission.discodeit.entity.ReadStatus readStatus = new com.sprint.mission.discodeit.entity.ReadStatus(userId, channelId, lastReadAt);
         return readStatusRepository.save(readStatus);
     }
 
     @Override
-    public ReadStatus find(UUID readStatusId) {
+    public com.sprint.mission.discodeit.entity.ReadStatus find(UUID readStatusId) {
         return readStatusRepository.findById(readStatusId)
                 .orElseThrow(() -> new NoSuchElementException("ReadStatus with id " + readStatusId + " not found"));
     }
 
     @Override
-    public List<ReadStatus> findAllByUserId(UUID userId) {
+    public List<com.sprint.mission.discodeit.entity.ReadStatus> findAllByUserId(UUID userId) {
         return readStatusRepository.findAllByUserId(userId).stream()
                 .toList();
     }
 
     @Override
-    public ReadStatus update(UUID readStatusId, ReadStatusUpdateRequest request) {
+    public com.sprint.mission.discodeit.entity.ReadStatus update(UUID readStatusId, ReadStatusUpdateRequest request) {
         Instant newLastReadAt = request.newLastReadAt();
-        ReadStatus readStatus = readStatusRepository.findById(readStatusId)
+        com.sprint.mission.discodeit.entity.ReadStatus readStatus = readStatusRepository.findById(readStatusId)
                 .orElseThrow(() -> new NoSuchElementException("ReadStatus with id " + readStatusId + " not found"));
         readStatus.update(newLastReadAt);
         return readStatusRepository.save(readStatus);
@@ -74,7 +73,7 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     @Override
-    public ReadStatusDto makeDto(ReadStatus readStatus){
+    public ReadStatus makeDto(com.sprint.mission.discodeit.entity.ReadStatus readStatus){
         return readStatus.toDto(readStatus);
     }
 }

@@ -1,8 +1,8 @@
 package com.sprint.mission.discodeit.mapper;
 
-import com.sprint.mission.discodeit.dto.form.UserForm;
 import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -10,9 +10,9 @@ import java.util.Optional;
 @Component
 public class OptionalBinaryContentMapper {
 
-    public Optional<BinaryContentCreateRequest> toBinaryContentCreateRequest(UserForm userForm) {
+    public Optional<BinaryContentCreateRequest> toBinaryContentCreateRequest(MultipartFile profile) {
 
-        return Optional.ofNullable(userForm.profile())
+        return Optional.ofNullable(profile)
                 .filter(file -> !file.isEmpty())
                 .map(file -> {
                     try {

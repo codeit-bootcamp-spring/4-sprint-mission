@@ -1,6 +1,5 @@
 package com.sprint.mission.discodeit.mapper;
 
-import com.sprint.mission.discodeit.dto.form.MessageForm;
 import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,13 +10,13 @@ import java.util.List;
 @Component
 public class BinaryContentMapper {
 
-    public List<BinaryContentCreateRequest> addBinaryContentCreateRequest(MessageForm form) {
+    public List<BinaryContentCreateRequest> addBinaryContentCreateRequest(List<MultipartFile> attachments) {
         List<BinaryContentCreateRequest> requests = new ArrayList<>();
 
-        if (form.attachments() == null || form.attachments().isEmpty()) {
+        if (attachments == null || attachments.isEmpty()) {
             return List.of(); // 빈 리스트 반환
         }
-        for (MultipartFile file : form.attachments()) {
+        for (MultipartFile file : attachments) {
             try {
                 requests.add(new BinaryContentCreateRequest(
                         file.getOriginalFilename(),

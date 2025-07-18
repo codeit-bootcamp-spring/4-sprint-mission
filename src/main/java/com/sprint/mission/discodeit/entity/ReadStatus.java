@@ -1,6 +1,5 @@
 package com.sprint.mission.discodeit.entity;
 
-import com.sprint.mission.discodeit.dto.data.ReadStatusDto;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -38,8 +37,8 @@ public class ReadStatus implements Serializable {
         }
     }
 
-    public ReadStatusDto toDto(ReadStatus readStatus){
-        return new ReadStatusDto(
+    public com.sprint.mission.discodeit.dto.data.ReadStatus toDto(ReadStatus readStatus){
+        return new com.sprint.mission.discodeit.dto.data.ReadStatus(
                 readStatus.getId(),
                 readStatus.getCreatedAt(),
                 readStatus.getUpdatedAt(),

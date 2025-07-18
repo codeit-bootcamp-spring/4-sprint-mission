@@ -1,8 +1,7 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.data.BinaryContentDto;
+import com.sprint.mission.discodeit.dto.data.BinaryContent;
 import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
-import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +17,12 @@ public class BasicBinaryContentService implements BinaryContentService {
     private final BinaryContentRepository binaryContentRepository;
 
     @Override
-    public BinaryContent create(BinaryContentCreateRequest request) {
+    public com.sprint.mission.discodeit.entity.BinaryContent create(BinaryContentCreateRequest request) {
         String fileName = request.fileName();
 
         byte[] bytes = request.bytes();
         String contentType = request.contentType();
-        BinaryContent binaryContent = new BinaryContent(
+        com.sprint.mission.discodeit.entity.BinaryContent binaryContent = new com.sprint.mission.discodeit.entity.BinaryContent(
                 fileName,
                 (long) bytes.length,
                 contentType,
@@ -33,13 +32,13 @@ public class BasicBinaryContentService implements BinaryContentService {
     }
 
     @Override
-    public BinaryContent find(UUID binaryContentId) {
+    public com.sprint.mission.discodeit.entity.BinaryContent find(UUID binaryContentId) {
         return binaryContentRepository.findById(binaryContentId)
                 .orElseThrow(() -> new NoSuchElementException("BinaryContent with id " + binaryContentId + " not found"));
     }
 
     @Override
-    public List<BinaryContent> findAllByIdIn(List<UUID> binaryContentIds) {
+    public List<com.sprint.mission.discodeit.entity.BinaryContent> findAllByIdIn(List<UUID> binaryContentIds) {
         return binaryContentRepository.findAllByIdIn(binaryContentIds).stream()
                 .toList();
     }
@@ -53,7 +52,7 @@ public class BasicBinaryContentService implements BinaryContentService {
     }
 
     @Override
-    public BinaryContentDto makeDto(BinaryContent binaryContent){
+    public BinaryContent makeDto(com.sprint.mission.discodeit.entity.BinaryContent binaryContent){
         return binaryContent.toDto(binaryContent);
     }
 }
