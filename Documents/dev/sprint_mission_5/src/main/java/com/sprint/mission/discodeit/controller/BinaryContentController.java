@@ -1,0 +1,103 @@
+package com.sprint.mission.discodeit.controller;
+
+import com.sprint.mission.discodeit.common.ApiResponseDto;
+import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponseDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.exception.dto.ErrorResponse;
+import com.sprint.mission.discodeit.service.BinaryContentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@Tag(name = "BinaryContent", description = "첨부 파일 API")
+@RestController
+@RequestMapping("/api/binaryContents")
+public class BinaryContentController {
+    private final BinaryContentService binaryContentService;
+
+    public BinaryContentController(BinaryContentService binaryContentService) {
+        this.binaryContentService = binaryContentService;
+    }
+
+    @Operation(summary = "첨부 파일 조회", description = "단일 BinaryContent ID를 기반으로 파일을 조회합니다.", operationId = "find")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "첨부 파일 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BinaryContentResponseDto.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                                     "messageId": "uuid...",
+                                                     "content": "내일 참석 멤버가이 어떻게 되나요",
+                                                     "channelId": "uuid...",
+                                                     "authorId": "uuid...",
+                                                     "attachmentId": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "첨부 파일을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject (
+                                    value = """
+                                            {
+                                              "code": "BINARY_CONTENT_NOT_FOUND",
+                                              "message": "BinaryContent with id {binaryContentId} not found"
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @GetMapping("/{binaryContentId}")
+    public ResponseEntity<BinaryContentResponseDto> getBinaryContent(@PathVariable UUID binaryContentId) {
+        BinaryContentResponseDto dto = binaryContentService.find(binaryContentId);
+        return ResponseEntity.status(HttpStatus.OK).body(dto);
+    }
+
+    @Operation(summary = "여러 첨부 파일 조회", description = "지정된 BinaryContent ID 목록을 기반으로 여러 파일을 조회합니다.", operationId = "findAllByIdIn")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "첨부 파일 목록 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = BinaryContentResponseDto.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                                     "messageId": "uuid...",
+                                                     "content": "내일 참석 멤버가이 어떻게 되나요",
+                                                     "channelId": "uuid...",
+                                                     "authorId": "uuid...",
+                                                     "attachmentId": null
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @GetMapping
+    public ResponseEntity<List<BinaryContentResponseDto>> getBinaryContents(@RequestParam List<UUID> fileIds) {
+        List<BinaryContentResponseDto> files = binaryContentService.findAllByIdIn(fileIds);
+        return ResponseEntity.status(HttpStatus.OK).body(files);
+    }
+}

@@ -1,0 +1,59 @@
+package com.sprint.mission.discodeit.entity;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Getter
+@Setter
+public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private UUID id;
+    private Instant createdAt;
+    private Instant updatedAt;
+    //
+    private String username;
+    private String email;
+    private String password;
+    private UUID fileId;
+    private UserStatus userStatus;
+    private LocalDateTime lastLogin;
+
+    public User(String username, String email, String password, UUID fileId) {
+       Instant now = Instant.now();
+       this.createdAt = now;
+       this.updatedAt = now;
+       this.id = UUID.randomUUID();
+        //
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.fileId = fileId;
+        this.lastLogin = LocalDateTime.now();
+    }
+
+    public void update(String newUsername, String newEmail, String newPassword) {
+        boolean anyValueUpdated = false;
+        if (newUsername != null && !newUsername.equals(this.username)) {
+            this.username = newUsername;
+            anyValueUpdated = true;
+        }
+        if (newEmail != null && !newEmail.equals(this.email)) {
+            this.email = newEmail;
+            anyValueUpdated = true;
+        }
+        if (newPassword != null && !newPassword.equals(this.password)) {
+            this.password = newPassword;
+            anyValueUpdated = true;
+        }
+
+        if (anyValueUpdated) {
+            this.updatedAt = Instant.now();
+        }
+    }
+}
