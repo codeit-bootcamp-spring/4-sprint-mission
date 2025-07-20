@@ -1,6 +1,8 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,26 +33,45 @@ public class FileMessageRepository implements MessageRepository {
                 writeToFile(new HashMap<>());
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot initialize Message file", e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
     }
 
     @Override
     public Message save(Message message) {
-        Map<UUID, Message> all = readFromFile();
-        all.put(message.getId(), message);
-        writeToFile(all);
-        return message;
+        try {
+            Map<UUID, Message> all = readFromFile();
+            all.put(message.getId(), message);
+            writeToFile(all);
+            return message;
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public Optional<Message> findById(UUID id) {
-        return Optional.ofNullable(readFromFile().get(id));
+        try {
+            return Optional.ofNullable(readFromFile().get(id));
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public List<Message> findAll() {
-        return new ArrayList<>(readFromFile().values());
+        try {
+            return new ArrayList<>(readFromFile().values());
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -62,24 +83,35 @@ public class FileMessageRepository implements MessageRepository {
 
     @Override
     public boolean existsById(UUID id) {
-        return readFromFile().containsKey(id);
+        try {
+            return readFromFile().containsKey(id);
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public void deleteById(UUID id) {
-        Map<UUID, Message> all = readFromFile();
-        if (all.remove(id) != null) {
-            writeToFile(all);
+        try {
+            Map<UUID, Message> all = readFromFile();
+            if (all.remove(id) != null) {
+                writeToFile(all);
+            }
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
         }
     }
 
     @Override
     public void deleteByChannelId(UUID channelId) {
         // 채널에 속한 메시지 파일들을 모두 삭제
-        findAllByChannelId(channelId)
-                .stream()
-                .map(Message::getId)
-                .forEach(this::deleteById);
+        for (Message msg: findAllByChannelId(channelId)) {
+            deleteById(msg.getId());
+        }
     }
 
 
@@ -98,14 +130,14 @@ public class FileMessageRepository implements MessageRepository {
     /**
      * 역직렬화
      */
-    private Map<UUID, Message> readFromFile() {
+    private Map<UUID, Message> readFromFile() throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(
                 Files.newInputStream(filePath))) {
             return (Map<UUID, Message>) ois.readObject();
         } catch (EOFException eof) {
             return new HashMap<>();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read Message file", e);
+            throw e;
         }
     }
 }

@@ -1,14 +1,16 @@
 package com.sprint.mission.discodeit.dto.readStsuts;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import java.util.UUID;
+import java.time.Instant;
 
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ReadStatusUpdateDto {
+    @Schema(description = "마지막으로 읽은 시간", example = "2025-07-20T15:57:48.774Z")
     @NotNull
-    private final UUID id;
+    private final Instant newLastReadAt;
 }

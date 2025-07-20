@@ -1,12 +1,14 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateDto;
 import com.sprint.mission.discodeit.dto.user.UserCreateDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateDto;
 import com.sprint.mission.discodeit.dto.user.UserResponseDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.entity.BinaryContentType;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
@@ -15,9 +17,9 @@ import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,15 +34,17 @@ public class BasicUserService implements UserService {
     private final BinaryContentMapper binaryContentMapper;
 
     @Override
-    public UserResponseDto create(UserCreateDto requestDto) {
+    public UserResponseDto create(UserCreateDto requestDto, MultipartFile profileImage) {
         validateCreate(requestDto);
         User createUser = userMapper.toEntity(requestDto);
-        userRepository.save(createUser);
+
         try {
-            handleProfileImage(createUser, requestDto.getBinaryContent());
+            handleProfileImage(createUser, profileImage, BinaryContentType.PROFILE);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
+        userRepository.save(createUser);
 
         // UserStatus도 함께 저장
         UserStatus userStatus = new UserStatus(createUser.getId());
@@ -71,26 +75,18 @@ public class BasicUserService implements UserService {
     }
 
     @Override
-    public UserResponseDto update(UserUpdateDto requestDto) {
-        User existingUser = requireUser(requestDto.getId());
-
-        // 변경된 경우에만 중복체크
-        if (!existingUser.getUsername().equals(requestDto.getUsername())) {
-            validateExistUsername(requestDto.getUsername());
-        }
-        if (!existingUser.getEmail().equals(requestDto.getEmail())) {
-            validateExistEmail(requestDto.getEmail());
-        }
-        UserStatus userStatus = requireStatus(existingUser.getId());
+    public UserResponseDto update(UUID userId, UserUpdateDto dto, MultipartFile profileImage) {
+        User existingUser = requireUser(userId);
 
         try {
-            handleProfileImage(existingUser, requestDto.getBinaryContent());
+            handleProfileImage(existingUser, profileImage, BinaryContentType.PROFILE);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
-
-        userMapper.updateEntity(requestDto, existingUser);
+        userMapper.updateEntity(dto, existingUser);
         userRepository.save(existingUser);
+        UserStatus userStatus = requireStatus(existingUser.getId());
+
         return userMapper.toDto(existingUser, userStatus.isOnline());
     }
 
@@ -153,17 +149,24 @@ public class BasicUserService implements UserService {
      * 프로필 이미지가 존재하면 저장하고 사용자 엔티티에 반영합니다.
      *
      * @param user 사용자 엔티티
-     * @param bcDto 프로필 이미지 DTO
+     * @param file 이미지 파일
+     * @param type 이미지 유형 (PROFILE)
      */
-    private void handleProfileImage(User user, BinaryContentCreateDto bcDto) throws IOException {
-        if (bcDto == null) return;
-        if (user.getProfileId() != null) {
-            binaryContentRepository.deleteById(user.getProfileId());
+    private void handleProfileImage(User user,
+                                    MultipartFile file,
+                                    BinaryContentType type) throws IOException {
+        if (file == null || file.isEmpty() || type == null) {
+            return;
         }
-        BinaryContent bc = binaryContentMapper.toEntity(bcDto);
-        binaryContentRepository.save(bc);
-        user.updateProfileId(bc.getId());
-        userRepository.save(user);
+        // 기존 이미지 삭제
+        Optional.ofNullable(user.getProfileId())
+                .ifPresent(binaryContentRepository::deleteById);
+
+        // 새 이미지 저장
+        BinaryContent bc = binaryContentMapper.toEntity(file, type);
+        BinaryContent saved = binaryContentRepository.save(bc);
+
+        user.updateProfileId(saved.getId());
     }
 
     /**

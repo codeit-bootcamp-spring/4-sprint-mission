@@ -1,6 +1,8 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,21 +37,35 @@ public class FileReadStatusRepository implements ReadStatusRepository {
                 writeToFile(new HashMap<>());
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot initialize ReadStatus file", e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
     }
 
     @Override
     public ReadStatus save(ReadStatus readStatus) {
-        Map<UUID, ReadStatus> all = readFromFile();
-        all.put(readStatus.getId(), readStatus);
-        writeToFile(all);
-        return readStatus;
+        try {
+            Map<UUID, ReadStatus> all = readFromFile();
+            all.put(readStatus.getId(), readStatus);
+            writeToFile(all);
+            return readStatus;
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public Optional<ReadStatus> findById(UUID id) {
-        return Optional.of(readFromFile().get(id));
+        try {
+            ReadStatus rs = readFromFile().get(id);
+            return Optional.ofNullable(rs);
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -84,7 +100,13 @@ public class FileReadStatusRepository implements ReadStatusRepository {
 
     @Override
     public boolean existsById(UUID id) {
-        return readFromFile().containsKey(id);
+        try {
+            return readFromFile().containsKey(id);
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -101,21 +123,33 @@ public class FileReadStatusRepository implements ReadStatusRepository {
 
     @Override
     public void deleteById(UUID id) {
-        Map<UUID, ReadStatus> all = readFromFile();
-        if (all.remove(id) != null) {
-            writeToFile(all);
+        try {
+            Map<UUID, ReadStatus> all = readFromFile();
+            if (all.remove(id) != null) {
+                writeToFile(all);
+            }
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
         }
     }
 
     @Override
     public void deleteByChannelId(UUID channelId) {
-        findAllByChannelId(channelId).stream()
-                .map(ReadStatus::getId)
-                .forEach(this::deleteById);
+        for (ReadStatus rs : findAllByChannelId(channelId)) {
+            deleteById(rs.getId());
+        }
     }
 
     private List<ReadStatus> findAll() {
-        return new ArrayList<>(readFromFile().values());
+        try {
+            return new ArrayList<>(readFromFile().values());
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     /**
@@ -133,14 +167,14 @@ public class FileReadStatusRepository implements ReadStatusRepository {
     /**
      * 역직렬화
      */
-    private Map<UUID, ReadStatus> readFromFile() {
+    private Map<UUID, ReadStatus> readFromFile() throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(
                 Files.newInputStream(filePath))) {
             return (Map<UUID, ReadStatus>) ois.readObject();
         } catch (EOFException eof) {
             return new HashMap<>();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read ReadStatus file", e);
+            throw e;
         }
     }
 }

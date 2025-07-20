@@ -1,6 +1,8 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,21 +37,52 @@ public class FileBinaryContentRepository implements BinaryContentRepository {
                 writeToFile(new HashMap<>());
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot initialize binary content file", e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
     }
 
     @Override
     public BinaryContent save(BinaryContent binaryContent) {
-        Map<UUID, BinaryContent> all = readFromFile();
-        all.put(binaryContent.getId(), binaryContent);
-        writeToFile(all);
-        return binaryContent;
+        try {
+            Map<UUID, BinaryContent> all = readFromFile();
+            all.put(binaryContent.getId(), binaryContent);
+            writeToFile(all);
+            return binaryContent;
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
+    public List<BinaryContent> saveAll(List<BinaryContent> binaryContents) {
+        try {
+            Map<UUID, BinaryContent> all = readFromFile();
+
+            for (BinaryContent bc : binaryContents) {
+                all.put(bc.getId(), bc);
+            }
+            writeToFile(all);
+            return binaryContents;
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
+    }
+
+
+    @Override
     public Optional<BinaryContent> findById(UUID id) {
-        return Optional.of(readFromFile().get(id));
+        try {
+            return Optional.of(readFromFile().get(id));
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -62,19 +95,37 @@ public class FileBinaryContentRepository implements BinaryContentRepository {
 
     @Override
     public List<BinaryContent> findAll() {
-        return new ArrayList<>(readFromFile().values());
+        try {
+            return new ArrayList<>(readFromFile().values());
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public boolean existsById(UUID id) {
-        return readFromFile().containsKey(id);
+        try {
+            return readFromFile().containsKey(id);
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public void deleteById(UUID id) {
-        Map<UUID, BinaryContent> all = readFromFile();
-        if (all.remove(id) != null) {
-            writeToFile(all);
+        try {
+            Map<UUID, BinaryContent> all = readFromFile();
+            if (all.remove(id) != null) {
+                writeToFile(all);
+            }
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
         }
     }
 
@@ -94,14 +145,14 @@ public class FileBinaryContentRepository implements BinaryContentRepository {
     /**
      * 역직렬화
      */
-    private Map<UUID, BinaryContent> readFromFile() {
+    private Map<UUID, BinaryContent> readFromFile() throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(
                 Files.newInputStream(filePath))) {
             return (Map<UUID, BinaryContent>) ois.readObject();
         } catch (EOFException eof) {
             return new HashMap<>();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read binary content file", e);
+            throw e;
         }
     }
 }

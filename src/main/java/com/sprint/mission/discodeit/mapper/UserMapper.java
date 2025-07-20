@@ -1,6 +1,5 @@
 package com.sprint.mission.discodeit.mapper;
 
-import com.sprint.mission.discodeit.dto.readStsuts.ReadStatusResponseDto;
 import com.sprint.mission.discodeit.dto.user.UserCreateDto;
 import com.sprint.mission.discodeit.dto.user.UserResponseDto;
 import com.sprint.mission.discodeit.dto.user.UserUpdateDto;
@@ -30,9 +29,15 @@ public class UserMapper {
      * UserUpdateDto → 기존 User 엔티티 덮어쓰기
      */
     public void updateEntity(UserUpdateDto dto, User user) {
-        if (dto.getUsername() != null) user.updateUsername(dto.getUsername());
-        if (dto.getEmail()    != null) user.updateEmail(dto.getEmail());
-        if (dto.getPassword() != null) user.updatePassword(dto.getPassword());
+        if (dto.getNewUsername() != null && !dto.getNewUsername().isBlank()) {
+            user.updateUsername(dto.getNewUsername());
+        }
+        if (dto.getNewEmail() != null && !dto.getNewEmail().isBlank()) {
+            user.updateEmail(dto.getNewEmail());
+        }
+        if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
+            user.updatePassword(dto.getNewPassword());
+        }
         user.touch();
     }
 

@@ -3,6 +3,8 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateDto;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentResponseDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
@@ -10,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,8 @@ public class BasicBinaryContentService implements BinaryContentService {
         try {
             createContent = binaryContentMapper.toEntity(binaryContentCreateDto);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
         binaryContentRepository.save(createContent);
         return binaryContentMapper.toDto(createContent);
@@ -43,7 +45,7 @@ public class BasicBinaryContentService implements BinaryContentService {
     public List<BinaryContentResponseDto> findAllByIdIn(List<UUID> idList) {
         List<BinaryContent> contents = requireBinaryContents(idList);
 
-        return binaryContentMapper.toDtoList(contents);
+        return binaryContentMapper.toDtos(contents);
     }
 
     @Override

@@ -30,6 +30,14 @@ public class JCFBinaryContentRepository implements BinaryContentRepository {
     }
 
     @Override
+    public List<BinaryContent> saveAll(List<BinaryContent> binaryContents) {
+        for (BinaryContent bc : binaryContents) {
+            this.data.put(bc.getId(), bc);
+        }
+        return binaryContents;
+    }
+
+    @Override
     public Optional<BinaryContent> findById(UUID id) {
         return Optional.ofNullable(this.data.get(id));
     }

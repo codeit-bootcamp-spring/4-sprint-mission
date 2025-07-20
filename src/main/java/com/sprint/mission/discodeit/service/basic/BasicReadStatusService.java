@@ -34,8 +34,8 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     @Override
-    public ReadStatusResponseDto find(UUID id) {
-        ReadStatus readStatus = requireReadStatus(id);
+    public ReadStatusResponseDto find(UUID readStatusId) {
+        ReadStatus readStatus = requireReadStatus(readStatusId);
         return readStatusMapper.toDto(readStatus);
     }
 
@@ -47,8 +47,8 @@ public class BasicReadStatusService implements ReadStatusService {
     }
 
     @Override
-    public ReadStatusResponseDto update(ReadStatusUpdateDto readStatusUpdateDto) {
-        ReadStatus readStatus = requireReadStatus(readStatusUpdateDto.getId());
+    public ReadStatusResponseDto update(UUID readStatusId, ReadStatusUpdateDto readStatusUpdateDto) {
+        ReadStatus readStatus = requireReadStatus(readStatusId);
         readStatusMapper.updateEntity(readStatusUpdateDto, readStatus);
         readStatusRepository.save(readStatus);
         return readStatusMapper.toDto(readStatus);
@@ -120,12 +120,12 @@ public class BasicReadStatusService implements ReadStatusService {
     /**
      * ID에 해당하는 ReadStatus를 조회합니다.
      *
-     * @param id ReadStatus ID
+     * @param readStatusId ReadStatus ID
      * @return ReadStatus 엔티티
      * @throws NoSuchElementException ReadStatus가 존재하지 않는 경우
      */
-    private ReadStatus requireReadStatus(UUID id) {
-        return readStatusRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("ReadStatus with id " + id + " not found"));
+    private ReadStatus requireReadStatus(UUID readStatusId) {
+        return readStatusRepository.findById(readStatusId)
+                .orElseThrow(() -> new NoSuchElementException("ReadStatus with id " + readStatusId + " not found"));
     }
 }

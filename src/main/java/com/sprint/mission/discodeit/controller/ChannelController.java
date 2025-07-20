@@ -1,77 +1,75 @@
 package com.sprint.mission.discodeit.controller;
 
-import com.sprint.mission.discodeit.dto.channel.AllChannelByUserIdResponseDto;
+import com.sprint.mission.discodeit.controller.api.ChannelApi;
 import com.sprint.mission.discodeit.dto.channel.ChannelCreateDto;
 import com.sprint.mission.discodeit.dto.channel.ChannelResponseDto;
 import com.sprint.mission.discodeit.dto.channel.ChannelUpdateDto;
 import com.sprint.mission.discodeit.entity.ChannelType;
 import com.sprint.mission.discodeit.service.ChannelService;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
+/*
+ * 기존: /v1/channels, PathVariable: channel-id
+ * 요구사항: /api/channels, PathVariable: channelId
+ * 요구사항에 맞춰 변경하였습니다.
+ *
+ * CommonResponse를 만들고 스웨거 문서에 반영도 했습니다.
+ * 하지만 코드잇에서 주어진 API 스펙과 프론트엔드 코드와 맞지 않아 모두 제거했습니다.
+ * 그래서 CommonResponse가 쓰인 곳은 없지만, CommonResponse를 비롯한 에러를 담은 응답 코드에 대한 피드백을 받으면 좋을 것 같아서 함께 올립니다.
+ */
 @RestController
-@RequestMapping("/v1")
-public class ChannelController {
+@RequestMapping("/api/channels")
+@RequiredArgsConstructor
+public class ChannelController implements ChannelApi {
     private final ChannelService channelService;
 
-    @PostConstruct
-    public void init() {
-        ChannelCreateDto pubCreate = new ChannelCreateDto(
-                ChannelType.PUBLIC,
-                "공지", "공지 채널입니다",
-                null, null);
-        channelService.createPublicChannel(pubCreate);
+    /*
+    * 기존: POST /v1/channels => body의 channel-type 값에 따라 분기 처리하여 비공개/공개 채널 생성
+    * 요구사항: POST /api/channels/private, POST /api/channels/public => 핸들러 메서드 분리하여 채널 생성
+    * */
+    @PostMapping("/public")
+    public ResponseEntity<ChannelResponseDto> createPublicChannel(@RequestBody @Valid ChannelCreateDto dto) {
+        ChannelResponseDto created = channelService.createPublicChannel(dto);
+        dto.setChannelType(ChannelType.PUBLIC);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(created);
     }
 
-    public ChannelController(ChannelService channelService) {
-        this.channelService = channelService;
-    }
-
-    @RequestMapping(method = RequestMethod.POST, value = "/channels")
-    public ResponseEntity<ChannelResponseDto> createChannel(@RequestParam("channel-type") ChannelType type,
-                                                            @RequestBody @Valid ChannelCreateDto dto) {
-        ChannelResponseDto created = new ChannelResponseDto();
-        switch (type) {
-            case PUBLIC:
-                created = channelService.createPublicChannel(dto);
-            break;
-            case PRIVATE:
-                created = channelService.createPrivateChannel(dto);
-                break;
-            default:
-                break;
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
-
-    @RequestMapping(method = RequestMethod.GET, value = "/users/{user-id}/channels")
-    public ResponseEntity<AllChannelByUserIdResponseDto> getChannels(@PathVariable("user-id") UUID userId) {
-        return ResponseEntity.ok(channelService.findAllByUserId(userId));
+    @PostMapping("/private")
+    public ResponseEntity<ChannelResponseDto> createPrivateChannel(@RequestBody @Valid ChannelCreateDto dto) {
+        dto.setChannelType(ChannelType.PRIVATE);
+        ChannelResponseDto created = channelService.createPrivateChannel(dto);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(created);
     }
 
     /*
-     * 채널 ID로 단일 조회는 요구사항에 없었지만 추가해놓았습니다.
-     * userId의 경우, 헤더로부터 전달받습니다. (추후 JWT 와 같은 토큰과 같은 용도라고 보시면 좋을 것 같습니다)
-     */
-    @RequestMapping(method = RequestMethod.GET, value = "channels/{channel-id}")
-    public ResponseEntity<ChannelResponseDto> getChannel(@PathVariable("channel-id") UUID channelId,
-                                                         @RequestHeader("user-id") UUID userId) {
-        return ResponseEntity.ok(channelService.find(channelId, userId));
+    * 이전에는 채널 목록 조회를 위해 유저의 아이디를 헤더에 담아 전달했으나,
+    * 프론트엔드 코드(= 코드잇)에 맞추기 위해서 RequestParam으로 변경했습니다.*/
+    @GetMapping
+    public ResponseEntity<List<ChannelResponseDto>> getChannels(@RequestParam("userId") UUID userId) {
+        return ResponseEntity
+                .ok(channelService.findAllByUserId(userId));
     }
 
-    @RequestMapping(method = RequestMethod.PUT, value = "channels/{channel-id}")
-    public ResponseEntity<ChannelResponseDto> updateChannel(@PathVariable("channel-id") UUID channelId,
-                                          @RequestBody @Valid ChannelUpdateDto dto) {
-        return ResponseEntity.ok(channelService.update(dto));
+    @PatchMapping("/{channelId}")
+    public ResponseEntity<ChannelResponseDto> updateChannel(@PathVariable("channelId") UUID channelId,
+                                                          @RequestBody @Valid ChannelUpdateDto dto) {
+        ChannelResponseDto updated = channelService.update(channelId, dto);
+        return ResponseEntity.ok(updated);
     }
 
-    @RequestMapping(method = RequestMethod.DELETE, value = "channels/{channel-id}")
-    public ResponseEntity<ChannelResponseDto> deleteChannel(@PathVariable("channel-id") UUID channelId) {
+    @DeleteMapping("/{channelId}")
+    public ResponseEntity<Void> deleteChannel(@PathVariable("channelId") UUID channelId) {
         channelService.delete(channelId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }

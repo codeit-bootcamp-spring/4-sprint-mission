@@ -12,9 +12,11 @@ import com.sprint.mission.discodeit.service.ChannelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -27,68 +29,78 @@ public class BasicChannelService implements ChannelService {
 
     @Override
     public ChannelResponseDto createPublicChannel(ChannelCreateDto dto) {
+        dto.setChannelType(ChannelType.PUBLIC);
         validateCreateChannel(dto, ChannelType.PUBLIC);
-
         Channel channel = channelMapper.toEntity(dto);
+
         channelRepository.save(channel);
-        return channelMapper.toDto(channel, null, null);
+        return channelMapper.toDto(channel, List.of());
     }
 
     @Override
     public ChannelResponseDto createPrivateChannel(ChannelCreateDto dto) {
+        dto.setChannelType(ChannelType.PRIVATE);
         validateCreateChannel(dto, ChannelType.PRIVATE);
-
         Channel channel = channelMapper.toEntity(dto);
         Channel saved = channelRepository.save(channel);
 
-        // ReadStatus 양 쪽 유저
-        readStatusRepository.save(new ReadStatus(dto.getUserId(), saved.getId()));
-        readStatusRepository.save(new ReadStatus(dto.getOtherUserId(), saved.getId()));
-
-        return channelMapper.toDto(saved, dto.getUserId(), dto.getOtherUserId());
+        // PRIVATE 채널에 참여하고 있는 유저의 ReadStatus 생성
+        for (UUID participantId : dto.getParticipantIds()) {
+            readStatusRepository.save(new ReadStatus(participantId, saved.getId(), Instant.now()));
+        }
+        return channelMapper.toDto(saved, dto.getParticipantIds());
     }
 
     @Override
     public ChannelResponseDto find(UUID channelId, UUID userId) {
         Channel channel = requireChannel(channelId);
         if (channel.getType() == ChannelType.PUBLIC) {
-            return channelMapper.toDto(channel, null, null);
+            return channelMapper.toDto(channel, List.of());
         } else {
-            // PRIVATE 채널의 경우 상대방 ID 조회
-            UUID otherId = findOtherUser(channel, userId);
-            return channelMapper.toDto(channel, otherId, userId);
+            List<UUID> participantIds = findParticipantIdsByChannel(channel);
+            return channelMapper.toDto(channel, participantIds);
         }
     }
 
     @Override
-    public AllChannelByUserIdResponseDto findAllByUserId(UUID userId) {
+    public List<ChannelResponseDto> findAllByUserId(UUID userId) {
         // PUBLIC 채널
         List<ChannelResponseDto> publicDtos = channelRepository
                 .findAllByChannelType(ChannelType.PUBLIC)
                 .stream()
-                .map(channel -> channelMapper.toDto(channel, null, null))
+                .map(channel -> channelMapper.toDto(channel, List.of()))
                 .toList();
 
         // PRIVATE 채널 중, 이 userId가 속한 채널만 조회
         List<ChannelResponseDto> privateDtos = readStatusRepository
                 .findAllByUserId(userId)
                 .stream()
-                .map(rs -> mapPrivateChannel(rs, userId))
+                .map(this::mapPrivateChannel)
+                .filter(dto -> dto.getType() == ChannelType.PRIVATE)
                 .toList();
 
-        return new AllChannelByUserIdResponseDto(publicDtos, privateDtos);
+        // 두 채널 합쳐서 반환
+        return Stream
+                .concat(publicDtos.stream(), privateDtos.stream())
+                .toList();
     }
 
     @Override
-    public ChannelResponseDto update(ChannelUpdateDto channelUpdateDto) {
-        Channel channel = requirePublicChannel(channelUpdateDto.getId());
-        String newName = channelUpdateDto.getName();
+    public ChannelResponseDto update(UUID channelId, ChannelUpdateDto dto) {
+        Channel channel = requirePublicChannel(channelId);
+        // name 이 변경된 경우만
+        String newName = dto.getName();
         if (newName != null && !newName.equalsIgnoreCase(channel.getName())) {
-            validateUniqueName(newName);
+            validateUniqueName(dto.getName());
+            channel.updateName(dto.getName());
         }
-        channelMapper.updateEntity(channelUpdateDto, channel);
+        // description 이 들어왔으면
+        if (dto.getDescription() != null) {
+            channel.updateDescription(dto.getDescription());
+        }
+        channelMapper.updateEntity(dto, channel);
         channelRepository.save(channel);
-        return channelMapper.toDto(channel, null, null);
+        return channelMapper.toDto(channel, List.of());
     }
 
     @Override
@@ -113,20 +125,14 @@ public class BasicChannelService implements ChannelService {
     private void validateCreateChannel(ChannelCreateDto dto, ChannelType type) {
         switch(type) {
             case PUBLIC:
-                if (dto.getType() != ChannelType.PUBLIC) {
-                    throw new IllegalArgumentException("채널 타입은 PUBLIC 이어야 합니다.");
-                }
                 if (dto.getName() == null || dto.getName().isBlank()) {
                     throw new IllegalArgumentException("Public 채널 생성 시 name 이 필요합니다.");
                 }
                 validateUniqueName(dto.getName());
                 break;
             case PRIVATE:
-                if (dto.getType() != ChannelType.PRIVATE) {
-                    throw new IllegalArgumentException("채널 타입은 PRIVATE 이어야 합니다.");
-                }
-                if (dto.getUserId() == null || dto.getOtherUserId() == null) {
-                    throw new IllegalArgumentException("Private 채널 생성 시 userId 와 otherUserId 가 필요합니다.");
+                if (dto.getParticipantIds() == null || dto.getParticipantIds().isEmpty()) {
+                    throw new IllegalArgumentException("Private 채널 생성 시 participantIds 가 필요합니다.");
                 }
                 break;
             default:
@@ -178,34 +184,29 @@ public class BasicChannelService implements ChannelService {
     }
 
     /**
-     * Private 채널에서 현재 사용자를 제외한 상대방 사용자 ID를 찾습니다.
+     * 주어진 Private 의 모든 참여자 ID 리스트를 조회합니다.
      * 존재하지 않을 경우 예외를 던집니다.
      *
      * @param channel 채널 엔티티
-     * @param userId 현재 사용자 ID
-     * @return 상대방 사용자 ID
-     * @throws NoSuchElementException 상대방을 찾을 수 없는 경우
+     * @return 해당 Private 채널에 속한 모든 사용자 ID 리스트
      */
-    private UUID findOtherUser(Channel channel, UUID userId) {
-        return readStatusRepository.findAllByChannelId(channel.getId())
+    private List<UUID> findParticipantIdsByChannel(Channel channel) {
+       return readStatusRepository
+                .findAllByChannelId(channel.getId())
                 .stream()
                 .map(ReadStatus::getUserId)
-                .filter(id -> !id.equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Other user not found in channel " + channel.getId()));
+                .toList();
     }
 
     /**
-     * Private 채널에 대한 응답 DTO를 생성합니다.
+     * ReadStatus 정보를 기반으로 Private 채널의 응답 DTO를 생성합니다.
      *
-     * @param rs ReadStatus 정보
-     * @param userId 현재 사용자 ID
-     * @return 채널 응답 DTO
+     * @param rs     ReadStatus 엔티티
+     * @return 채널 및 참가자 정보를 포함한 채널 응답 Dto
      */
-    private ChannelResponseDto mapPrivateChannel(ReadStatus rs, UUID userId) {
+    private ChannelResponseDto mapPrivateChannel(ReadStatus rs) {
         Channel ch = requireChannel(rs.getChannelId());
-        UUID other = findOtherUser(ch, userId);
-        return channelMapper.toDto(ch, userId, other);
+        List<UUID> participantIds = findParticipantIdsByChannel(ch);
+        return channelMapper.toDto(ch, participantIds);
     }
 }

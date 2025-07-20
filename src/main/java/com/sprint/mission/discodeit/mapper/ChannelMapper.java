@@ -7,6 +7,7 @@ import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ChannelType;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -16,14 +17,15 @@ public class ChannelMapper {
      */
     public Channel toEntity(ChannelCreateDto dto) {
         return new Channel(
-                dto.getType(),
+                dto.getChannelType(),
                 dto.getName(),
-                dto.getDescription()
+                dto.getDescription(),
+                dto.getParticipantIds()
         );
     }
 
     /**
-     * MessageUpdateDto → 기존 Channel 엔티티 덮어쓰기
+     * ChannelUpdateDto → 기존 Channel 엔티티 덮어쓰기
      */
     public void updateEntity(ChannelUpdateDto dto, Channel channel) throws IllegalArgumentException {
         if (channel.getType() != dto.getType()) {
@@ -42,27 +44,14 @@ public class ChannelMapper {
     /**
      * Channel → ChannelResponseDto 변환
      */
-    public ChannelResponseDto toDto(Channel channel, UUID userId, UUID otherUserId) {
-        if (channel.getType() == ChannelType.PUBLIC) {
-            return new ChannelResponseDto(
-                    channel.getId(),
-                    ChannelType.PUBLIC,
-                    channel.getName(),
-                    channel.getDescription(),
-                    null,
-                    null,
-                    null
-            );
-        } else {
-            return new ChannelResponseDto(
-                    channel.getId(),
-                    ChannelType.PRIVATE,
-                    null,
-                    null,
-                    userId,
-                    otherUserId,
-                    channel.getLastMessageSentAt()
-            );
-        }
+    public ChannelResponseDto toDto(Channel channel, List<UUID> participantIds) {
+        return new ChannelResponseDto(
+                channel.getId(),
+                channel.getType(),
+                channel.getName(),
+                channel.getDescription(),
+                participantIds,
+                channel.getLastMessageSentAt()
+        );
     }
 }

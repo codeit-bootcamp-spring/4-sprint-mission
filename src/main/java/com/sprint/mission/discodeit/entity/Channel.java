@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -19,7 +20,9 @@ public class Channel implements Serializable {
     private String name;
     private String description;
 
-    public Channel(ChannelType type, String name, String description) {
+    private List<UUID> participantIds;
+
+    public Channel(ChannelType type, String name, String description, List<UUID> participantIds) {
         this.id = UUID.randomUUID();
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
@@ -27,6 +30,7 @@ public class Channel implements Serializable {
         this.type = type;
         this.name = name;
         this.description = description;
+        this.participantIds = participantIds;
     }
 
     // 공개채널
@@ -46,5 +50,4 @@ public class Channel implements Serializable {
     public void touch() {
         this.updatedAt = Instant.now();
     }
-
 }

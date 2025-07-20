@@ -3,10 +3,13 @@ package com.sprint.mission.discodeit.mapper;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateDto;
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentResponseDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.entity.BinaryContentType;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 
 @Component
@@ -18,11 +21,45 @@ public class BinaryContentMapper {
         try {
             return new BinaryContent(
                     dto.getFile().getBytes(),
+                    dto.getFile().getOriginalFilename(),
+                    dto.getFile().getContentType(),
+                    dto.getFile().getSize(),
                     dto.getType()
             );
         } catch (IOException e) {
-            throw new UncheckedIOException("멀티파트파일에서 바이트를 읽지 못했습니다.", e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
+    }
+
+    /**
+     * MultipartFile + BinaryContentType → BinaryContent 엔티티 변환
+     */
+    public BinaryContent toEntity(MultipartFile file, BinaryContentType type) {
+        try {
+            return new BinaryContent(
+                    file.getBytes(),
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    file.getSize(),
+                    type
+            );
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        }
+    }
+
+    /**
+     * List<MultipartFile> + BinaryContentType → List<BinaryContent> 변환
+     */
+    public List<BinaryContent> toEntities(
+            List<MultipartFile> files,
+            BinaryContentType type
+    ) {
+        return files.stream()
+                .filter(file -> file != null && !file.isEmpty())
+                .map(file -> toEntity(file, type))
+                .toList();
     }
 
     /**
@@ -33,6 +70,9 @@ public class BinaryContentMapper {
                 binaryContent.getId(),
                 binaryContent.getBytes(),
                 binaryContent.getType(),
+                binaryContent.getFileName(),
+                binaryContent.getContentType(),
+                binaryContent.getSize(),
                 binaryContent.getCreatedAt()
         );
     }
@@ -40,7 +80,7 @@ public class BinaryContentMapper {
     /**
      * BinaryContent → BinaryContentResponseDto를 리스트로 변환
      */
-    public List<BinaryContentResponseDto> toDtoList(List<BinaryContent> binaryContents) {
+    public List<BinaryContentResponseDto> toDtos(List<BinaryContent> binaryContents) {
         return binaryContents.stream()
                 .map(this::toDto)
                 .toList();

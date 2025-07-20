@@ -2,6 +2,8 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ChannelType;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,21 +35,34 @@ public class FileChannelRepository implements ChannelRepository {
                 writeToFile(new HashMap<>());
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot initialize Channel file", e);
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
     }
 
     @Override
-    public Channel save(Channel channel) {
-        Map<UUID, Channel> all = readFromFile();
-        all.put(channel.getId(), channel);
-        writeToFile(all);
-        return channel;
+    public Channel save(Channel channel){
+        try {
+            Map<UUID, Channel> all = readFromFile();
+            all.put(channel.getId(), channel);
+            writeToFile(all);
+            return channel;
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public Optional<Channel> findById(UUID id) {
-        return Optional.ofNullable(readFromFile().get(id));
+        try {
+            return Optional.ofNullable(readFromFile().get(id));
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -60,19 +75,37 @@ public class FileChannelRepository implements ChannelRepository {
 
     @Override
     public List<Channel> findAll() {
-        return new ArrayList<>(readFromFile().values());
+        try {
+            return new ArrayList<>(readFromFile().values());
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public boolean existsById(UUID id) {
-        return readFromFile().containsKey(id);
+        try {
+            return readFromFile().containsKey(id);
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public void deleteById(UUID id) {
-        Map<UUID, Channel> all = readFromFile();
-        if (all.remove(id) != null) {
-            writeToFile(all);
+        try {
+            Map<UUID, Channel> all = readFromFile();
+            if (all.remove(id) != null) {
+                writeToFile(all);
+            }
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
         }
     }
 
@@ -91,14 +124,14 @@ public class FileChannelRepository implements ChannelRepository {
     /**
      * 역직렬화
      */
-    private Map<UUID, Channel> readFromFile() {
+    private Map<UUID, Channel> readFromFile() throws IOException, ClassNotFoundException {
         try (ObjectInputStream ois = new ObjectInputStream(
                 Files.newInputStream(filePath))) {
             return (Map<UUID, Channel>) ois.readObject();
         } catch (EOFException eof) {
             return new HashMap<>();
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read Channel file", e);
+            throw e;
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.auth.LoginUserDto;
+import com.sprint.mission.discodeit.dto.auth.LoginRequestDto;
 import com.sprint.mission.discodeit.dto.user.UserResponseDto;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
@@ -19,7 +19,7 @@ public class BasicAuthService implements AuthService {
     private final UserMapper userMapper;
 
     @Override
-    public UserResponseDto login(LoginUserDto loginUserDto) {
+    public UserResponseDto login(LoginRequestDto loginUserDto) {
         User user = requireUserByUsername(loginUserDto.getUsername());
         validatePassword(loginUserDto.getPassword(), user.getPassword());
 

@@ -1,6 +1,8 @@
 package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.FileAccessException;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,15 +42,27 @@ public class FileUserStatusRepository implements UserStatusRepository {
 
     @Override
     public UserStatus save(UserStatus userStatus) {
-        Map<UUID, UserStatus> all = readFromFile();
-        all.put(userStatus.getId(), userStatus);
-        writeToFile(all);
-        return userStatus;
+        try {
+            Map<UUID, UserStatus> all = readFromFile();
+            all.put(userStatus.getId(), userStatus);
+            writeToFile(all);
+            return userStatus;
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public Optional<UserStatus> findById(UUID id) {
-        return Optional.of(readFromFile().get(id));
+        try {
+            return Optional.of(readFromFile().get(id));
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -61,12 +75,24 @@ public class FileUserStatusRepository implements UserStatusRepository {
 
     @Override
     public List<UserStatus> findAll() {
-        return new ArrayList<>(readFromFile().values());
+        try {
+            return new ArrayList<>(readFromFile().values());
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
     public boolean existsById(UUID id) {
-        return readFromFile().containsKey(id);
+        try {
+            return readFromFile().containsKey(id);
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            throw new FileAccessException(ErrorCode.FILE_CLASS_NOT_FOUND);
+        }
     }
 
     @Override
@@ -76,9 +102,16 @@ public class FileUserStatusRepository implements UserStatusRepository {
 
     @Override
     public void deleteById(UUID id) {
-        Map<UUID, UserStatus> all = readFromFile();
-        if (all.remove(id) != null) {
-            writeToFile(all);
+        try {
+            Map<UUID, UserStatus> all = readFromFile();
+            if (all.remove(id) != null) {
+                writeToFile(all);
+            }
+        } catch (IOException e) {
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
+        } catch (ClassNotFoundException e) {
+            // 트랜잭션시 롤백을 고려해서 RuntimeException을 상속받은 FileAccessException 형태로 예외 전환해서 던지도록 설정했습니다.
+            throw new FileAccessException(ErrorCode.FILE_IO_ERROR);
         }
     }
 
@@ -87,23 +120,8 @@ public class FileUserStatusRepository implements UserStatusRepository {
         findByUserId(userId).ifPresent(u -> deleteById(u.getId()));
     }
 
-
     /**
      * 직렬화
-     */
-    private Map<UUID, UserStatus> readFromFile() {
-        try (ObjectInputStream ois = new ObjectInputStream(
-                Files.newInputStream(filePath))) {
-            return (Map<UUID, UserStatus>) ois.readObject();
-        } catch (EOFException eof) {
-            return new HashMap<>();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("Failed to read user status file", e);
-        }
-    }
-
-    /**
-     * 역직렬화
      */
     private void writeToFile(Map<UUID, UserStatus> map) {
         try (ObjectOutputStream oos = new ObjectOutputStream(
@@ -111,6 +129,20 @@ public class FileUserStatusRepository implements UserStatusRepository {
             oos.writeObject(map);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write user status file", e);
+        }
+    }
+
+    /**
+     * 역직렬화
+     */
+    private Map<UUID, UserStatus> readFromFile() throws IOException, ClassNotFoundException {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                Files.newInputStream(filePath))) {
+            return (Map<UUID, UserStatus>) ois.readObject();
+        } catch (EOFException eof) {
+            return new HashMap<>();
+        } catch (IOException | ClassNotFoundException e) {
+            throw e;
         }
     }
 }

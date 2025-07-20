@@ -1,8 +1,21 @@
 spring:
   application:
     name: discodeit
+  servlet:
+    multipart:
+      maxFileSize: 10MB       # 파일 하나의 최대 크기
+      maxRequestSize: 30MB    # 한 번에 최대 업로드 가능 용량
 
 discodeit:
   repository:
-    type: jcf
+    type: file
     file-directory: data/discodeit
+
+springdoc:
+  override-with-generic-response: true
+  default-consumes-media-type: application/json # 소비 미디어 타입
+  default-produces-media-type: application/json # 생산 미디어 타입
+  swagger-ui:
+    operations-sorter: method # operations 정렬 방식은 HTTP Method 순 (메서드 순서 delete - get - patch - post - put)
+    tags-sorter: alpha    # tag 정렬 방식은 알파벳 순
+    path: "swagger.html"  # http://localhost:8080/swagger.html로 접속 가능

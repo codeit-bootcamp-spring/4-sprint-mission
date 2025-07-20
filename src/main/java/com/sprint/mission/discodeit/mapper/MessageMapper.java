@@ -26,7 +26,7 @@ public class MessageMapper {
      * MessageUpdateDto → 기존 Message 엔티티 덮어쓰기
      */
     public void updateEntity(MessageUpdateDto dto, Message msg) {
-        if (dto.getContent() != null) msg.updateContent(dto.getContent());
+        if (dto.getContent() != null && !dto.getContent().isBlank()) msg.updateContent(dto.getContent());
         msg.touch();
     }
 

@@ -16,7 +16,8 @@ public class ReadStatusMapper {
     public ReadStatus toEntity(ReadStatusCreateDto dto) {
         return new ReadStatus(
                 dto.getUserId(),
-                dto.getChannelId()
+                dto.getChannelId(),
+                dto.getLastReadAt()
         );
     }
 
@@ -25,7 +26,7 @@ public class ReadStatusMapper {
      */
     public void updateEntity(ReadStatusUpdateDto dto, ReadStatus readStatus) {
         // 사용자가 마지막으로 메시지를 읽은 시간 업데이트
-        if (dto.getId() != null) readStatus.touch();
+        if (dto.getNewLastReadAt() != null) readStatus.touch();
     }
 
     /**
@@ -36,7 +37,9 @@ public class ReadStatusMapper {
                 readStatus.getId(),
                 readStatus.getLastReadAt(),
                 readStatus.getUserId(),
-                readStatus.getChannelId()
+                readStatus.getChannelId(),
+                readStatus.getCreatedAt(),
+                readStatus.getUpdatedAt()
         );
     }
 
