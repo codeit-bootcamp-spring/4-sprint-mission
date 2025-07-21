@@ -68,18 +68,18 @@ public class MessageController {
     @ApiResponse(responseCode = "200", description = "메세지 수정 완료")
     @ApiResponse(responseCode = "400", description = "JSON 형식이 잘못되었거나 필수 파라미터가 누락되었습니다")
     @ApiResponse(responseCode = "404", description = "해당 메세지를 찾을 수 없습니다")
-    @RequestMapping(value = "/{messageId}",method = RequestMethod.PATCH, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(value = "/{messageId}",method = RequestMethod.PATCH)
     public ResponseEntity<Message> patchMessage(
             @Parameter(description = "메세지 UUID", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable("messageId") UUID messageId,
-            @Parameter(
-                    description = "메세지 수정 json",
-                    required = true,
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MessageUpdateRequest.class)
-                    )
-            )
+//            @Parameter(
+//                    description = "메세지 수정 json",
+//                    required = true,
+//                    content = @Content(
+//                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+//                            schema = @Schema(implementation = MessageUpdateRequest.class)
+//                    )
+//            )
             @RequestBody MessageUpdateRequest request) {
         com.sprint.mission.discodeit.entity.Message message = messageService.update(messageId,request);
         Message messageDto = messageService.makeDto(message);

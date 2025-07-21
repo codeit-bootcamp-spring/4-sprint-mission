@@ -48,7 +48,7 @@ public class ReadStatusController {
         return new ResponseEntity<>(readStatusDto, HttpStatus.OK);
     }
 
-    @RequestMapping( method = RequestMethod.GET)
+    @RequestMapping( value = "/user", method = RequestMethod.GET)
     @Operation(summary = "유저의 모든 수신 정보 조회", description = "유저의 모든 수신 정보를 리스트로 조회합니다.")
     @ApiResponse(responseCode = "200", description = "모든 수신 정보 조회 완료")
     @ApiResponse(responseCode = "404", description = "해당 유저를 찾을 수 없습니다")
