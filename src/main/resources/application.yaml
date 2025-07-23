@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: discodeit
+# jcf / file
+discodeit:
+  repository:
+    type: file
+    file-directory: .discodeit
+
+springdoc:
+  swagger-ui:
+    path: /docs
+    enabled: true
+  api-docs:
+    enabled: true
+  default-produces-media-type: application/json
+  info:
+    title: "Discodeit API 문서"
+    description: "Discodeit 프로젝트의 Swagger API 문서입니다."
+    version: "v1"
