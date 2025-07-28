@@ -1,41 +1,48 @@
 package com.sprint.mission.discodeit.entity;
 
+import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+@Entity
+@Table(name = "user_statuses")
 @Getter
-public class UserStatus extends BaseUpdateEntity {
+@Setter
+@NoArgsConstructor
+public class UserStatus extends BaseUpdateEntity implements Serializable{
 
   private static final long serialVersionUID = 1L;
-//  private UUID id;
-//  private Instant createdAt;
-//  private Instant updatedAt;
-  //
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
   private User user;
+
+
+  public void setUser(User user) {
+    this.user = user;
+    if(user != null && user.getUserStatus()!= this) {
+      user.setUserStatus(this);
+    }
+  }
+
+  @Column(nullable = false)
   private Instant lastActiveAt;
 
   public UserStatus(User user, Instant lastActiveAt) {
-//    this.id = UUID.randomUUID();
-//    this.createdAt = Instant.now();
-    //
     this.user = user;
     this.lastActiveAt = lastActiveAt;
   }
 
   public void update(Instant lastActiveAt) {
-//    boolean anyValueUpdated = false;
     if (lastActiveAt != null && !lastActiveAt.equals(this.lastActiveAt)) {
       this.lastActiveAt = lastActiveAt;
-//      anyValueUpdated = true;
     }
-
-//    if (anyValueUpdated) {
-//      this.updatedAt = Instant.now();
-//    }
   }
 
   public Boolean isOnline() {

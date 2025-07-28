@@ -1,54 +1,66 @@
 package com.sprint.mission.discodeit.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
+@Table(name = "channels")
 @Getter
+@Setter
 @NoArgsConstructor
 public class Channel extends BaseUpdateEntity{
 
-  private static final long serialVersionUID = 1L;
-  //private UUID id;
-  //private Instant createdAt;
-  //private Instant updatedAt;
-  @Column(nullable = false)
-  @Enumerated(EnumType.STRING)
-  private ChannelType type;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ChannelType type;
 
-  @Column(nullable = false)
-  private String name;
+    @Column(length = 100)
+    private String name;
 
-  @Column
-  private String description;
+    @Column(length = 500)
+    private String description;
 
-  public Channel(ChannelType type, String name, String description) {
-    this.type = type;
-    this.name = name;
-    this.description = description;
-  }
-
-  public void update(String newName, String newDescription) {
-//    boolean anyValueUpdated = false;
-    if (newName != null && !newName.equals(this.name)) {
-      this.name = newName;
-//      anyValueUpdated = true;
-    }
-    if (newDescription != null && !newDescription.equals(this.description)) {
-      this.description = newDescription;
-//      anyValueUpdated = true;
-    }
-
-//    if (anyValueUpdated) {
-//      this.updatedAt = Instant.now();
+//    @OneToMany(mappedBy = "channel", cascade = CascadeType.REMOVE, orphanRemoval = true)
+//    private List<Message> messageList = new ArrayList<>();
+//
+//    public void addMessage(Message message) {
+//        messageList.add(message);
+//        if (message != null && message.getChannel() != this) {
+//            message.setChannel(this);
+//        }
 //    }
-  }
+
+//    @OneToMany(mappedBy = "channel", cascade = CascadeType.REMOVE, orphanRemoval = true)
+//    private List<ReadStatus> readStatusList = new ArrayList<>();
+//
+//    public void addReadStatus(ReadStatus readStatus) {
+//        readStatusList.add(readStatus);
+//        if (readStatus != null && readStatus.getChannel() != this) {
+//            readStatus.setChannel(this);
+//        }
+//    }
+
+    public Channel(ChannelType type, String name, String description) {
+        this.type = type;
+        this.name = name;
+        this.description = description;
+    }
+
+    public void update(String newName, String newDescription) {
+        if (newName != null && !newName.equals(this.name)) {
+            this.name = newName;
+        }
+        if (newDescription != null && !newDescription.equals(this.description)) {
+            this.description = newDescription;
+        }
+
+    }
 }

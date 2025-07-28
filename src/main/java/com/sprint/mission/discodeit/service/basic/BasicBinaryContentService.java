@@ -2,10 +2,12 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -16,21 +18,25 @@ import java.util.UUID;
 public class BasicBinaryContentService implements BinaryContentService {
 
   private final BinaryContentRepository binaryContentRepository;
+  BinaryContentMapper binaryContentMapper;
 
+  @Transactional
   @Override
   public BinaryContent create(BinaryContentCreateRequest request) {
-    String fileName = request.fileName();
-    byte[] bytes = request.bytes();
-    String contentType = request.contentType();
-    BinaryContent binaryContent = new BinaryContent(
-        fileName,
-        (long) bytes.length,
-        contentType,
-        bytes
-    );
+//    String fileName = request.fileName();
+//    byte[] bytes = request.bytes();
+//    String contentType = request.contentType();
+//    BinaryContent binaryContent = new BinaryContent(
+//        fileName,
+//        (long) bytes.length,
+//        contentType,
+//        bytes
+//    );
+    BinaryContent binaryContent = binaryContentMapper.toEntity(request);
     return binaryContentRepository.save(binaryContent);
   }
 
+  @Transactional(readOnly = true)
   @Override
   public BinaryContent find(UUID binaryContentId) {
     return binaryContentRepository.findById(binaryContentId)
@@ -38,12 +44,14 @@ public class BasicBinaryContentService implements BinaryContentService {
             "BinaryContent with id " + binaryContentId + " not found"));
   }
 
+  @Transactional(readOnly = true)
   @Override
   public List<BinaryContent> findAllByIdIn(List<UUID> binaryContentIds) {
     return binaryContentRepository.findAllByIdIn(binaryContentIds).stream()
         .toList();
   }
 
+  @Transactional
   @Override
   public void delete(UUID binaryContentId) {
     if (!binaryContentRepository.existsById(binaryContentId)) {
