@@ -1,21 +1,25 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.*;
+import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
+import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
 import com.sprint.mission.discodeit.entity.*;
 import com.sprint.mission.discodeit.exception.BusinessLogicException;
 import com.sprint.mission.discodeit.exception.ExceptionCode;
-import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
-import com.sprint.mission.discodeit.mapper.MessageMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,111 +31,84 @@ public class BasicMessageService implements MessageService {
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
     private final BinaryContentRepository binaryContentRepository;
-    private final BinaryContentMapper binaryContentMapper;
-    private final MessageMapper messageMapper;
+    @Autowired(required = false)
+    private BinaryContentStorage binaryContentStorage;
 
+    @Transactional
     @Override
-    public MessageResponseDto createMessage(MessageCreateRequest messageCreateRequest, List<BinaryContentPostDto> attachments) {
+    public Message createMessage(MessageCreateRequest messageCreateRequest, List<UUID> attachments) {
         validateChannel(messageCreateRequest.channelId());
-        Channel channel = channelRepository.findById(messageCreateRequest.channelId());
+        Channel channel = channelRepository.findById(messageCreateRequest.channelId())
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND));
         validateUser(messageCreateRequest.authorId());
-
-        Message message = messageMapper.toMessage(messageCreateRequest);
+        User user = userRepository.findById(messageCreateRequest.authorId())
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.USER_NOT_FOUND));
+        Message message = new Message(messageCreateRequest.content(), channel, user);
 
         if (attachments != null && !attachments.isEmpty()) {
             attachments.stream()
-                    .filter(binaryContent -> binaryContent != null)
-                    .forEach(binaryContent -> {
-                        BinaryContent biContent = binaryContentMapper.toBinaryContent(binaryContent);
-                        message.getAttachmentIds().add(biContent.getId());
-                        binaryContentRepository.save(biContent);
+                    .forEach(binaryContentId -> {
+                        BinaryContent binaryContent = binaryContentRepository.findById(binaryContentId)
+                                .orElse(null);
+                        message.getAttachments().add(binaryContent);
                     });
         }
-        message.setActive(ActiveStatus.ACTIVE);
         messageRepository.save(message);
-
-        channel.addMessageToChannel(message);
-        channelRepository.save(channel);
-        MessageResponseDto messageResponseDto = messageMapper.toMessageResponseDto(message);
-        return messageResponseDto;
+        return message;
     }
 
     @Override
-    public List<MessageResponseDto> findallByChannelId(UUID channelId) {
-        List<MessageResponseDto> messageResponseDtos = new ArrayList<>();
-        messageRepository.findAll().stream()
-                .filter(message -> message.getChannelId().equals(channelId))
-                .forEach(message -> messageResponseDtos.add(messageMapper.toMessageResponseDto(message)));
-
-        return messageResponseDtos;
+    public Page<Message> findAllByChannelId(UUID channelId, Instant cursor, Pageable pageable) {
+        Page<Message> messages = messageRepository.findAllByChannel_Id(channelId, pageable);
+        return messages;
     }
 
+    @Transactional
     @Override
-    public MessageResponseDto getMessagesById(UUID messageId) {
-        return messageMapper.toMessageResponseDto(messageRepository.findById(messageId));
-    }
-
-    @Override
-    public MessageResponseDto updateMessage(UUID messageId, MessageUpdateRequest messageUpdateRequest) {
-        Message findMessage = messageRepository.findById(messageId);
+    public Message updateMessage(UUID messageId, MessageUpdateRequest messageUpdateRequest) {
+        Message findMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.MESSAGE_NOT_FOUND));
         validateActiveMessage(findMessage);
 
-        Optional.ofNullable(messageUpdateRequest.newContent()).ifPresent(findMessage::setContent);
-        findMessage.setUpdatedAt(Instant.now());
+        Optional.ofNullable(messageUpdateRequest.newContent())
+                .ifPresent(findMessage::setContent);
 
         messageRepository.save(findMessage);
 
-        return messageMapper.toMessageResponseDto(findMessage);
+        return findMessage;
     }
 
-    @Override
-    public List<MessageResponseDto> getActiveMessages() {
-        List<MessageResponseDto> activeMessageResponseDtos = new ArrayList<>();
-        messageRepository.findAllActive().stream()
-                .forEach(message -> activeMessageResponseDtos.add(messageMapper.toMessageResponseDto(message)));
-        return activeMessageResponseDtos;
-    }
-
-    @Override
-    public List<MessageResponseDto> findAll() {
-        List<MessageResponseDto> messageResponseDtos = new ArrayList<>();
-        messageRepository.findAll().stream()
-                .forEach(message -> messageResponseDtos.add(messageMapper.toMessageResponseDto(message)));
-        return messageResponseDtos;
-    }
-
+    @Transactional
     @Override
     public void removeMessage(UUID messageId) {
-        Message findMessage = messageRepository.findById(messageId);
+        Message findMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.MESSAGE_NOT_FOUND));
         validateActiveMessage(findMessage);
 
-        findMessage.setActive(ActiveStatus.DELETE);
         messageRepository.delete(findMessage);
-        if (findMessage.getAttachmentIds() != null && !findMessage.getAttachmentIds().isEmpty()) {
-            findMessage.getAttachmentIds().stream()
-                    .forEach(id -> {
-                        binaryContentRepository.delete(id);
+        if (findMessage.getAttachments() != null && !findMessage.getAttachments().isEmpty()) {
+            findMessage.getAttachments().stream()
+                    .forEach(bc -> {
+                        binaryContentRepository.delete(bc);
                     });
         }
-        Channel channel = channelRepository.findById(findMessage.getChannelId());
-        channel.removeMessageFromChannel(findMessage);
+        Channel channel = channelRepository.findById(findMessage.getChannelId())
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND));
         channelRepository.save(channel);
     }
 
     private void validateActiveMessage(Message message) {
-        if (!message.getActive().equals(ActiveStatus.ACTIVE))
+        if (!messageRepository.existsById(message.getId()))
             throw new BusinessLogicException(ExceptionCode.MESSAGE_NOT_FOUND);
     }
 
     private void validateUser(UUID authorId) {
-        if (userRepository.findAll().stream()
-                .noneMatch(user -> user.getId().equals(authorId)))
+        if (!userRepository.existsById(authorId))
             throw new BusinessLogicException(ExceptionCode.CHANNEL_OR_USER_NOT_FOUND);
     }
 
     private void validateChannel(UUID channelId) {
-        if (channelRepository.findAll().stream()
-                .noneMatch(channel -> channel.getId().equals(channelId)))
+        if (!channelRepository.existsById(channelId))
             throw new BusinessLogicException(ExceptionCode.CHANNEL_OR_USER_NOT_FOUND);
     }
 }

@@ -1,30 +1,32 @@
 package com.sprint.mission.discodeit.entity;
 
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
-@NoArgsConstructor
-public class Channel extends BasedEntity {
-    private String channelName;
+@Entity
+@Table(name = "channels")
+public class Channel extends BaseUpdatableEntity {
+    @Column
+    private String name;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private ChannelType type;
-    private final List<UUID> userIds = new ArrayList<>();
-    private final List<UUID> messageIds = new ArrayList<>();
+    @Column
     private String description;
 
     public Channel(String name, String description) {
-        this.channelName = name;
+        super();
+        this.name = name;
         this.description = description;
         this.type = ChannelType.PUBLIC;
     }
 
-    public Channel(List<UUID> userIds) {
+    public Channel() {
+        super();
         this.type = ChannelType.PRIVATE;
     }
 
@@ -36,36 +38,14 @@ public class Channel extends BasedEntity {
                     ", channelId=" + super.getId() +
                     ", channelCreatedAt=" + super.getCreatedAt() +
                     ", channelUpdatedAt=" + super.getUpdatedAt() +
-                    ", channelName='" + channelName + '\'' +
+                    ", channelName='" + name + '\'' +
                     '}';
         } else if (type == ChannelType.PRIVATE) {
             return "Channel{" +
                     "ChannelType=" + type +
                     ", channelCreateAt=" + super.getCreatedAt() +
-                    ", channelUsers=" + getUserIds() +
                     "}";
         }
         return "Invalid type provided";
-    }
-
-    public void addMessageToChannel(Message message) {
-        if (this.messageIds.contains(message.getId())) throw new IllegalArgumentException("Message already exists");
-        this.messageIds.add(message.getId());
-        message.addChannel(this);
-    }
-
-    public void removeMessageFromChannel(Message message) {
-        if (!this.messageIds.contains(message.getId())) throw new IllegalArgumentException("Message already removed");
-        this.messageIds.remove(message.getId());
-        message.removeChannel();
-    }
-
-    public void addUser(UUID userId) {
-        if (this.userIds.contains(userId)) throw new IllegalArgumentException("User already exists");
-        this.userIds.add(userId);
-    }
-
-    public void clearMessages() {
-        this.messageIds.clear();
     }
 }

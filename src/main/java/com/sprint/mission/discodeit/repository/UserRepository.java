@@ -1,14 +1,25 @@
 package com.sprint.mission.discodeit.repository;
 
 import com.sprint.mission.discodeit.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-public interface UserRepository {
-    List<User> findAll();
-    User findById(UUID id);
+public interface UserRepository extends JpaRepository<User, UUID> {
+    Page<User> findAll(Pageable pageable);
+
+    Optional<User> findById(UUID id);
+
     void delete(User user);
-    void save(User user);
-    User findByName(String name);
+
+    User save(User user);
+
+    User findByUsername(String username);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByUsername(String name);
 }

@@ -1,22 +1,21 @@
 package com.sprint.mission.discodeit.service;
 
-import com.sprint.mission.discodeit.dto.*;
+import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
+import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
+import com.sprint.mission.discodeit.entity.Message;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 public interface MessageService {
-    MessageResponseDto createMessage(MessageCreateRequest messageCreateRequest, List<BinaryContentPostDto> attachments);
+    Message createMessage(MessageCreateRequest messageCreateRequest, List<UUID> attachments);
 
-    List<MessageResponseDto> findallByChannelId(UUID channelId);
+    Page<Message> findAllByChannelId(UUID channelId, Instant cursor, Pageable pageable);
 
-    MessageResponseDto getMessagesById(UUID messageId);
-
-    MessageResponseDto updateMessage(UUID messageId, MessageUpdateRequest messageUpdateRequest);
+    Message updateMessage(UUID messageId, MessageUpdateRequest messageUpdateRequest);
 
     void removeMessage(UUID messageId);
-
-    List<MessageResponseDto> getActiveMessages();
-
-    List<MessageResponseDto> findAll();
 }

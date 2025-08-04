@@ -1,36 +1,37 @@
 package com.sprint.mission.discodeit.mapper;
 
-import com.sprint.mission.discodeit.dto.*;
+import com.sprint.mission.discodeit.dto.ChannelDto;
+import com.sprint.mission.discodeit.dto.UserDto;
 import com.sprint.mission.discodeit.entity.Channel;
-import org.springframework.stereotype.Component;
+import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.ReadStatusRepository;
+import org.mapstruct.Mapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
-@Component
-public class ChannelMapper {
-    public Channel toPublicChannel(PublicChannelCreateRequest publicChannelCreateRequest) {
-        return new Channel(publicChannelCreateRequest.name(), publicChannelCreateRequest.description());
+@Mapper(componentModel = "spring", uses = {UserMapper.class})
+public abstract class ChannelMapper {
+    @Autowired
+    private MessageRepository messageRepository;
+    @Autowired
+    private ReadStatusRepository readStatusRepository;
+    @Autowired
+    private UserMapper usermapper;
+
+    public ChannelDto toChannelDto(Channel channel) {
+        List<UserDto> participants = new ArrayList<>();
+        readStatusRepository.findByChannelId(channel.getId()).stream()
+                .forEach(readStatus -> participants.add(usermapper.toDto(readStatus.getUser())));
+        Optional<Message> latestMessage = messageRepository.findTopByChannelOrderByUpdatedAtDesc(channel);
+        Instant lastMessageAt = latestMessage.map(Message::getUpdatedAt).orElse(Instant.now());
+
+        return ofChannelDto(channel, participants, lastMessageAt);
     }
 
-    public Channel toPrivateChannel(PrivateChannelCreateRequest privateChannelCreateRequest) {
-        return new Channel(privateChannelCreateRequest.participantIds());
-    }
-
-    public ChannelResponseDto ofChannelResponseDto(Channel channel, Instant latestMessageTime) {
-        return new ChannelResponseDto(channel.getId(), channel.getChannelName(), channel.getDescription(), channel.getType(), channel.getUserIds(), latestMessageTime);
-    }
-
-    public ChannelPublicCreateResponseDto toChannelPublicCreateResponseDto(Channel channel) {
-        return new ChannelPublicCreateResponseDto(channel.getId(), channel.getType(), channel.getChannelName(), channel.getDescription());
-    }
-
-    public ChannelPrivateCreateResponseDto toChannelPrivateCreateResponseDto(Channel channel, List<UUID> ids) {
-        return new ChannelPrivateCreateResponseDto(channel.getId(), channel.getType(), ids);
-    }
-
-    public ChannelDto ofChannelDto(Channel channel, Instant latestMessageTime, List<UUID> ids) {
-        return new ChannelDto(channel.getId(), channel.getType(), channel.getChannelName(), channel.getDescription(), ids, latestMessageTime);
-    }
+    abstract public ChannelDto ofChannelDto(Channel channel, List<UserDto> participants, Instant lastMessageAt);
 }

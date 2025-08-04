@@ -1,25 +1,38 @@
 package com.sprint.mission.discodeit.entity;
 
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.UUID;
 
 @Getter
 @Setter
-public class User extends BasedEntity {
-    private UUID profileId;
+@NoArgsConstructor
+@Entity
+@Table(name = "users")
+public class User extends BaseUpdatableEntity {
+    @Column(unique = true, nullable = false)
     private String username;
+    @Column(unique = true, nullable = false)
     private String email;
+    @Column(nullable = false)
     private String password;
-    private PresenceStatus presenceStatus;
 
-    public User(String username, String password, String email, UUID profileId) {
+    @OneToOne(cascade = {CascadeType.PERSIST,CascadeType.REMOVE}, orphanRemoval = true)
+    @JoinColumn(name = "profile_id")
+    private BinaryContent profile;
+
+    @OneToOne(orphanRemoval = true, cascade = {CascadeType.ALL}, mappedBy = "user")
+    private UserStatus status;
+
+    public User(String username, String password, String email, BinaryContent profile) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.profileId = profileId;
-        this.presenceStatus = PresenceStatus.ONLINE;
+        this.profile = profile;
     }
 
     @Override
@@ -31,7 +44,10 @@ public class User extends BasedEntity {
                 ", userName='" + username + '\'' +
                 ", email= " + email +
                 ", password= " + password +
-                ", status=" + presenceStatus.getValue() +
                 '}';
+    }
+
+    public UUID getProfileId() {
+        return profile.getId();
     }
 }

@@ -13,15 +13,18 @@ public enum ExceptionCode {
     MESSAGE_NOT_FOUND(404, "Message Not Found"),
     CHANNEL_NOT_FOUND(404, "Channel Not Found"),
     PRIVATE_CHANNEL_CANNOT_UPDATE(400, "Private Channel Cannot Be Updated"),
-    BINARYCONTENT_NOT_FOUND(404, "BinaryContent Not Found"),
+    BINARY_CONTENT_NOT_FOUND(404, "BinaryContent Not Found"),
 
-    BINARYCONTENT_EXISTS(400, "BinaryContent Exists");
+    BINARY_CONTENT_EXISTS(400, "BinaryContent Exists"),
+    USER_ALREADY_EXISTS_USERSTATUS(400, "User Already Exists UserStatus"),
+    INVALID_PAST_TIME(400, "Time Is Earlier Than Saved Time"),
+    BINARY_CONTENT_STORAGE_NOT_FOUND(404,"BinaryContent Storage Not Found");
 
     @Getter
-    private int status;
+    private final int status;
 
     @Getter
-    private String message;
+    private final String message;
 
     ExceptionCode(int status, String message) {
         this.status = status;

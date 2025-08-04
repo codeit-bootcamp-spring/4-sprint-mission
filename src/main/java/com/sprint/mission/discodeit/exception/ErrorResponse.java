@@ -49,11 +49,11 @@ public class ErrorResponse {
     @Schema(description = "DTO 검증 실패")
     public static class FieldError {
         @Schema()
-        private String field;
+        private final String field;
         @Schema()
-        private Object rejectedValue;
+        private final Object rejectedValue;
         @Schema()
-        private String reason;
+        private final String reason;
 
         private FieldError(String field, Object rejectedValue, String reason) {
             this.field = field;
@@ -75,11 +75,11 @@ public class ErrorResponse {
     @Schema(description = "URI 변수 검증 실패")
     public static class ConstraintViolationError {
         @Schema()
-        private String propertyPath;
+        private final String propertyPath;
         @Schema()
-        private Object rejectedValue;
+        private final Object rejectedValue;
         @Schema()
-        private String reason;
+        private final String reason;
 
         private ConstraintViolationError(String propertyPath, Object rejectedValue, String reason) {
             this.propertyPath = propertyPath;

@@ -1,16 +1,18 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.BinaryContentPostDto;
-import com.sprint.mission.discodeit.dto.BinaryContentResponseDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
-import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
+import com.sprint.mission.discodeit.exception.BusinessLogicException;
+import com.sprint.mission.discodeit.exception.ExceptionCode;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.service.BinaryContentService;
-import com.sprint.mission.discodeit.service.MessageService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,41 +20,40 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BasicBinaryContentService implements BinaryContentService {
     private final BinaryContentRepository binaryContentRepository;
-    private final BinaryContentMapper binaryContentMapper;
-    private final MessageService messageService;
+    @Autowired(required = false)
+    private BinaryContentStorage binaryContentStorage;
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public BinaryContentResponseDto create(BinaryContentPostDto binaryContentPostDto) {
-        BinaryContent binaryContent = binaryContentMapper.toBinaryContent(binaryContentPostDto);
+    public BinaryContent create(MultipartFile file) {
+        BinaryContent binaryContent = new BinaryContent(file);
         binaryContentRepository.save(binaryContent);
-        return binaryContentMapper.toBinaryContentResponseDto(binaryContent);
+        if (binaryContentStorage != null) {
+            try {
+                binaryContentStorage.put(binaryContent.getId(), file.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            System.out.println("NOT LOCAL");
+        }
+        return binaryContent;
     }
 
     @Override
-    public BinaryContentResponseDto find(UUID id) {
-        return binaryContentMapper.toBinaryContentResponseDto(binaryContentRepository.findById(id));
+    public BinaryContent find(UUID id) {
+        return binaryContentRepository.findById(id)
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.BINARY_CONTENT_NOT_FOUND));
     }
 
     @Override
-    public List<BinaryContentResponseDto> findAllByIdIn(List<UUID> ids) {
-        List<BinaryContentResponseDto> binaryContentResponseDtos = new ArrayList<>();
-        binaryContentRepository.findAllById(ids).stream()
-                .forEach(binaryContent ->
-                        binaryContentResponseDtos.add(binaryContentMapper.toBinaryContentResponseDto(binaryContent)));
-        return binaryContentResponseDtos;
+    @Transactional(readOnly = true)
+    public List<BinaryContent> findAllByIdIn(List<UUID> ids) {
+        return binaryContentRepository.findAllByIdIn(ids);
     }
 
     @Override
     public void delete(UUID id) {
-        binaryContentRepository.delete(id);
-    }
-
-    // 테스트용 findAll()
-    public List<BinaryContentResponseDto> findAll() {
-        List<BinaryContentResponseDto> binaryContentResponseDtos = new ArrayList<>();
-        binaryContentRepository.findAll().stream()
-                .forEach(binaryContent ->
-                        binaryContentResponseDtos.add(binaryContentMapper.toBinaryContentResponseDto(binaryContent)));
-        return binaryContentResponseDtos;
+        binaryContentRepository.deleteById(id);
     }
 }

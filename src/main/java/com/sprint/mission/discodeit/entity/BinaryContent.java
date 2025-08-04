@@ -1,58 +1,47 @@
 package com.sprint.mission.discodeit.entity;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.sprint.mission.discodeit.entity.base.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Serializable;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.UUID;
 
 @Getter
 @Setter
-public class BinaryContent implements Serializable {
-    private static final long serialVersionUID = 1L;
-
-    private UUID id;
-    private Instant createdAt;
-    private ActiveStatus active;
-
+@NoArgsConstructor
+@Entity
+@Table(name = "binary_contents")
+public class BinaryContent extends BaseEntity implements Serializable {
+    @Column(nullable = false)
     private String contentType;
-    private final byte[] bytes;
+    @Column(nullable = false)
     private Long size;
+    @Column(nullable = false)
     private String fileName;
 
-    public BinaryContent(byte[] bytes, String contentType, Long size, String fileName) {
-        this.id = UUID.randomUUID();
-        this.createdAt = Instant.now();
-        this.active = ActiveStatus.ACTIVE;
-        this.bytes = bytes;
+    public BinaryContent(String contentType, Long size, String fileName) {
+        super();
         this.contentType = contentType;
         this.size = size;
         this.fileName = fileName;
     }
 
+    public BinaryContent(MultipartFile file) {
+        super();
+        this.contentType = file.getContentType();
+        this.size = file.getSize();
+        this.fileName = file.getOriginalFilename();
+    }
+
     @Override
     public String toString() {
         return "BinaryContent{" +
-                "id=" + id +
-                ", createdAt=" + createdAt +
-                ", active=" + active +
+                "id=" + super.getId() +
+                ", createdAt=" + super.getCreatedAt() +
                 ", contentType=" + contentType +
-                ", newContent=" + Arrays.toString(bytes) +
                 '}';
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        BinaryContent that = (BinaryContent) o;
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id);
-    }
 }
+
+

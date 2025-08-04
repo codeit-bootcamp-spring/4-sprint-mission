@@ -1,20 +1,20 @@
 package com.sprint.mission.discodeit.service.basic;
 
-import com.sprint.mission.discodeit.dto.ReadStatusCreateRequest;
-import com.sprint.mission.discodeit.dto.ReadStatusResponseDto;
-import com.sprint.mission.discodeit.dto.ReadStatusUpdateRequest;
+import com.sprint.mission.discodeit.dto.request.ReadStatusCreateRequest;
+import com.sprint.mission.discodeit.dto.request.ReadStatusUpdateRequest;
+import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.exception.BusinessLogicException;
 import com.sprint.mission.discodeit.exception.ExceptionCode;
-import com.sprint.mission.discodeit.mapper.ReadStatusMapper;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ReadStatusService;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -23,72 +23,57 @@ public class BasicReadStatusService implements ReadStatusService {
     private final ReadStatusRepository readStatusRepository;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
-    private final ReadStatusMapper readStatusMapper;
 
+    @Transactional
     @Override
-    public ReadStatusResponseDto create(ReadStatusCreateRequest readStatusCreateRequest) {
+    public ReadStatus create(ReadStatusCreateRequest readStatusCreateRequest) {
         validateUser(readStatusCreateRequest);
         validateChannel(readStatusCreateRequest);
         existsByUserAndChannel(readStatusCreateRequest);
-
-        ReadStatus readStatus = new ReadStatus(readStatusCreateRequest.userId(), readStatusCreateRequest.channelId(), Instant.now());
+        User user = userRepository.findById(readStatusCreateRequest.userId())
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.USER_NOT_FOUND));
+        Channel channel = channelRepository.findById(readStatusCreateRequest.channelId())
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND));
+        ReadStatus readStatus = new ReadStatus(user, channel, readStatusCreateRequest.lastReadAt());
         readStatusRepository.save(readStatus);
-        ReadStatusResponseDto readStatusResponseDto = readStatusMapper.toReadStatusResponseDto(readStatus);
-        return readStatusResponseDto;
+        return readStatus;
     }
 
     @Override
-    public ReadStatusResponseDto find(UUID id) {
-        return readStatusMapper.toReadStatusResponseDto(readStatusRepository.findById(id));
+    public List<ReadStatus> findAllByUserId(UUID userId) {
+        List<ReadStatus> readStatuses = readStatusRepository.findAllByUserId(userId);
+        return readStatuses;
     }
 
+    @Transactional
     @Override
-    public List<ReadStatusResponseDto> findAllByUserId(UUID userId) {
-        List<ReadStatusResponseDto> readStatusResponseDtos = new ArrayList<>();
-        readStatusRepository.findAll().stream()
-                .filter(readStatus -> readStatus.getUserId().equals(userId))
-                .forEach(readStatus -> readStatusResponseDtos.add(readStatusMapper.toReadStatusResponseDto(readStatus)));
-        return readStatusResponseDtos;
-    }
-
-    @Override
-    public ReadStatusResponseDto update(UUID id, ReadStatusUpdateRequest readStatusUpdateRequest) {
-        ReadStatus findReadStatus = readStatusRepository.findById(id);
+    public ReadStatus update(UUID id, ReadStatusUpdateRequest readStatusUpdateRequest) {
+        ReadStatus findReadStatus = readStatusRepository.findById(id).orElseThrow(() -> new BusinessLogicException(ExceptionCode.READSTATUS_NOT_FOUND));
 
         Optional.ofNullable(readStatusUpdateRequest.newLastReadAt()).ifPresent(findReadStatus::setLastReadAt);
         readStatusRepository.save(findReadStatus);
-        return readStatusMapper.toReadStatusResponseDto(findReadStatus);
+        return findReadStatus;
     }
 
     @Override
     public void delete(UUID id) {
-        readStatusRepository.delete(id);
-    }
-
-    // 테스트용 findAll()
-    public List<ReadStatusResponseDto> findAll() {
-        List<ReadStatusResponseDto> readStatusResponseDtos = new ArrayList<>();
-        readStatusRepository.findAll().stream()
-                .forEach(readStatus -> readStatusResponseDtos.add(readStatusMapper.toReadStatusResponseDto(readStatus)));
-        return readStatusResponseDtos;
+        readStatusRepository.deleteById(id);
     }
 
     private void validateUser(ReadStatusCreateRequest readStatusCreateDto) {
-        if (userRepository.findAll().stream()
-                .noneMatch(user -> user.getId().equals(readStatusCreateDto.userId())))
+        if (!userRepository.existsById(readStatusCreateDto.userId()))
             throw new BusinessLogicException(ExceptionCode.CHANNEL_OR_USER_NOT_FOUND);
     }
 
     private void validateChannel(ReadStatusCreateRequest readStatusCreateDto) {
-        if (channelRepository.findAll().stream()
-                .noneMatch(channel -> channel.getId().equals(readStatusCreateDto.channelId())))
+        if (!channelRepository.existsById(readStatusCreateDto.channelId()))
             throw new BusinessLogicException(ExceptionCode.CHANNEL_OR_USER_NOT_FOUND);
+
     }
 
     private void existsByUserAndChannel(ReadStatusCreateRequest readStatusCreateDto) {
-        if (readStatusRepository.findAll().stream()
-                .anyMatch(readStatus -> readStatus.getUserId().equals(readStatusCreateDto.userId())
-                        && readStatus.getChannelId().equals(readStatusCreateDto.channelId())))
+        if (readStatusRepository.existsByUser_IdAndChannel_Id(readStatusCreateDto.userId(), readStatusCreateDto.channelId()))
             throw new BusinessLogicException(ExceptionCode.READSTATUS_ALREADY_EXISTS);
     }
+
 }
