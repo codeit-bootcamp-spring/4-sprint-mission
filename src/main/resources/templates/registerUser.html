@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>사용자 등록</title>
+</head>
+<body>
+
+<h2>사용자 등록</h2>
+
+<form action="http://localhost:8080/v1/discodeit/users" method="post" enctype="multipart/form-data">
+  <label for="userName">사용자 이름</label>
+  <input type="text" id="userName" name="userName" required>
+
+  <label for="password">비밀번호</label>
+  <input type="password" id="password" name="password" required>
+
+  <label for="email">이메일</label>
+  <input type="email" id="email" name="email" required>
+
+  <label for="profileImage">프로필 이미지 </label>
+  <input type="file" id="profileImage" name="profileImage">
+
+  <button type="submit">등록</button>
+</form>
+
+</body>
+</html>

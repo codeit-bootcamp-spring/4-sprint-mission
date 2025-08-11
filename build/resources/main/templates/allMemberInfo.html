@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>회원 정보 및 상태 목록</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 90%;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #eee;
+        }
+        img {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+<h1 style="text-align: center;">회원 정보 및 상태 목록</h1>
+<p style="text-align: center;" th:text="${message}"></p>
+
+<table>
+    <thead>
+    <tr>
+        <th>회원 ID</th>
+        <th>사용자 이름</th>
+        <th>이메일</th>
+        <th>프로필 사진</th>
+        <th>상태</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="user, iterStat : ${users}">
+        <td th:text="${user.userId}"></td>
+        <td th:text="${user.userName}"></td>
+        <td th:text="${user.userEmail}"></td>
+        <td>
+            <img th:if="${user.userPicture != null}"
+                 th:src="'data:image/jpeg;base64,' + ${T(org.apache.tomcat.util.codec.binary.Base64).encodeBase64String(user.userPicture)}"
+                 alt="프로필 사진" />
+            <span th:if="${user.userPicture == null}">사진 없음</span>
+        </td>
+        <td th:text="${userStatuses[iterStat.index]?.statusDescription} ?: '상태 정보 없음'"></td>
+        <!-- userStatuses 리스트의 같은 인덱스에 상태가 있다고 가정 -->
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

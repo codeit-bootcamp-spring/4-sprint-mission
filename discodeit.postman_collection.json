@@ -1,0 +1,870 @@
+{
+	"info": {
+		"_postman_id": "f17a0ff7-7809-45fd-99e0-2c1fe96aa5ad",
+		"name": "디스코드잇",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "46246622"
+	},
+	"item": [
+		{
+			"name": "유저 컨트롤러 테스트",
+			"item": [
+				{
+					"name": "회원 가입",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "kwon1@email.com",
+									"type": "text"
+								},
+								{
+									"key": "profileImage",
+									"type": "file",
+									"src": "/C:/Users/chaos/Pictures/Camera Roll/WIN_20250603_12_25_59_Pro.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "회원조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users/c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"users",
+								"c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "유저 상태 업데이트",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"kwon1\",\r\n  \"password\": \"pw1\",\r\n  \"email\": \"kwon1@email.com\",\r\n  \"profileImagePath\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users/c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"users",
+								"c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "전체 회원 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"kwon1\",\r\n  \"password\": \"pw1\",\r\n  \"email\": \"kwon1@email.com\",\r\n  \"profileImagePath\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "회원 삭제",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users/46d9b1d6-e02f-4b55-bfdf-3068772ba60e",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"users",
+								"46d9b1d6-e02f-4b55-bfdf-3068772ba60e"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "권한 컨트롤러",
+			"item": [
+				{
+					"name": "로그인",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "메세지 컨트롤러",
+			"item": [
+				{
+					"name": "메세지 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelId",
+									"value": "f0a3c208-219e-4e14-9f9f-9e6cd479aa37",
+									"type": "text"
+								},
+								{
+									"key": "authorId",
+									"value": "c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99",
+									"type": "text"
+								},
+								{
+									"key": "content",
+									"value": "두 번째 메시지",
+									"type": "text"
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"src": [
+										"/C:/Users/chaos/Pictures/Camera Roll/pizza.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/pizza.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/pork cutlet.jpg"
+									]
+								},
+								{
+									"key": "messageCreateRequest",
+									"value": "{\"channelId\": \"f0a3c208-219e-4e14-9f9f-9e6cd479aa37\", \"authorId\": \"c06388d0-aac4-41d7-8e6a-963f0cedd6e7\", \"content\": \"첫 번째 메시지\"}",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/messages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 채널별 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "kwon1-public-channe1",
+									"type": "text"
+								},
+								{
+									"key": "messageContents",
+									"value": "the firest message",
+									"type": "text"
+								},
+								{
+									"key": "extraContentsFiles",
+									"type": "file",
+									"src": [
+										"/C:/Users/chaos/Pictures/Camera Roll/돈까스.jpg",
+										"/C:/Users/chaos/Pictures/Camera Roll/피자.jpg"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/messages?channelId",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "channelId",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메세지 수정",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{jwt_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"newContent\": \"수정된 메시지\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/messages/fd0212da-4589-4eab-a9dc-ba41850a3f9d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"messages",
+								"fd0212da-4589-4eab-a9dc-ba41850a3f9d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{jwt_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/messages/0ec7f0d7-e149-4ca6-8eea-a6d9892059c2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"messages",
+								"0ec7f0d7-e149-4ca6-8eea-a6d9892059c2"
+							],
+							"query": [
+								{
+									"key": "messageId",
+									"value": "18fd7b41-4289-4bf0-bd40-",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "메시지 수신 정보",
+			"item": [
+				{
+					"name": "메시지 수신 정보 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\": \"c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99\",\r\n    \"channelId\": \"30a8af6e-42e2-4d90-b38c-476ba19299fe\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/readStatuses",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"readStatuses"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "메시지 수신 정보 업데이트",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/readStatus?userId=c06388d0-aac4-41d7-8e6a-963f0cedd6e7",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"readStatus"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "c06388d0-aac4-41d7-8e6a-963f0cedd6e7"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "특정 유저의 메시지 수신 정보",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/readStatuses?userId=f0a3c208-219e-4e14-9f9f-9e6cd479aa37",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"readStatuses"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "f0a3c208-219e-4e14-9f9f-9e6cd479aa37"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "채널 컨트롤러",
+			"item": [
+				{
+					"name": "Public 채널 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{jwt_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"channelName\": \"kwon1-public-channel\",\r\n    \"description\": \"this channel is test channel\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/channels/public",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"channels",
+								"public"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Private 채널 생성",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{jwt_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"participantIds\": [\"c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99\"]\r\n}\r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/channels/private",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"channels",
+								"private"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "유저의 전체 채널 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userId",
+									"value": "c0e9ecf7-a93d-4002-b6a6-e91d3ea7ec99",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/channels",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"channels"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "채널 삭제",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "channelName",
+									"value": "kwon1-public-channe2",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/v1/discodeit/channels",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"discodeit",
+								"channels"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "공용 채널 정보 변경",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"newName\": \"new-public-channe\",\r\n    \"newDescription\": \"this is new name\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/channels/61883bb3-b61b-4bc2-9c8e-ba4dba03239f",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"channels",
+								"61883bb3-b61b-4bc2-9c8e-ba4dba03239f"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "바이너리컨텐츠 컨트롤러",
+			"item": [
+				{
+					"name": "다중 바이너리 컨텐츠 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/binaryContents?binaryContentIds= c14f0391-4d62-4a4e-9715-c0ef9ef6d8a0&binaryContentIds=7db2e21e-657f-40b0-9209-ef04a69c6557&binaryContentIds=7c4844b4-addf-40e7-bdc7-a013663b9065",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"binaryContents"
+							],
+							"query": [
+								{
+									"key": "binaryContentIds",
+									"value": " c14f0391-4d62-4a4e-9715-c0ef9ef6d8a0"
+								},
+								{
+									"key": "binaryContentIds",
+									"value": "7db2e21e-657f-40b0-9209-ef04a69c6557"
+								},
+								{
+									"key": "binaryContentIds",
+									"value": "7c4844b4-addf-40e7-bdc7-a013663b9065"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "단일 바이너리 컨텐츠 조회",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "userName",
+									"value": "kown1",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pw1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/binaryContents/ c14f0391-4d62-4a4e-9715-c0ef9ef6d8a0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"binaryContents",
+								" c14f0391-4d62-4a4e-9715-c0ef9ef6d8a0"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
