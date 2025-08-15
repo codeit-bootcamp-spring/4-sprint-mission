@@ -1,65 +1,100 @@
 package com.sprint.mission.discodeit.controller;
-import com.sprint.mission.discodeit.dto.ChannelService.*;
-import com.sprint.mission.discodeit.dto.UserService.*;
-import com.sprint.mission.discodeit.entity.ChannelType;
-import com.sprint.mission.discodeit.mapper.ChannelMapper;
+
+import com.sprint.mission.discodeit.controller.api.ChannelApi;
+import com.sprint.mission.discodeit.dto.data.ChannelDto;
+import com.sprint.mission.discodeit.dto.request.PrivateChannelCreateRequest;
+import com.sprint.mission.discodeit.dto.request.PublicChannelCreateRequest;
+import com.sprint.mission.discodeit.dto.request.PublicChannelUpdateRequest;
 import com.sprint.mission.discodeit.service.ChannelService;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
-@RestController
-@RequestMapping("/api/channels")
 @RequiredArgsConstructor
-public class ChannelController {
+@RestController
+@Slf4j
+@RequestMapping("/api/channels")
+public class ChannelController implements ChannelApi {
 
-    private final ChannelService channelService;
-    private final ChannelMapper channelMapper;
+  private final ChannelService channelService;
 
-    /**
-     * [x] 공개 채널을 생성할 수 있다.
-     * [x] 비공개 채널을 생성할 수 있다.
-     * [x] 공개 채널의 정보를 수정할 수 있다.
-     * [x] 채널을 삭제할 수 있다.
-     * [x] 특정 사용자가 볼 수 있는 모든 채널 목록을 조회할 수 있다.
-     */
+  @PostMapping(path = "public")
+  public ResponseEntity<ChannelDto> create(
+      @RequestBody @Valid PublicChannelCreateRequest request) {
+    log.info("POST /api/channels/public 채널 생성 요청 시작 - name: {}", request.name());
 
-    // ========= 채널을 1개로 통합?
-    @PostMapping("/public") // 공개 채널 생성
-    public ResponseEntity<ChannelResponseDto> createPublicChannel(@RequestBody PublicChannelRequestDto publicChannelRequestDto
-    ) {
-        ChannelResponseDto channelResponseDto = channelService.createPublic(publicChannelRequestDto);
-        return ResponseEntity.ok().body(channelResponseDto);
-    }
+    ChannelDto createdChannel = channelService.create(request);
 
-    @PostMapping("/private")// 비공개 채널 생성
-    public ResponseEntity<ChannelResponseDto> createPrivateChannel(@RequestBody PrivateChannelRequestDto privateChannelRequestDto
-    ) {
-        ChannelResponseDto channelResponseDto = channelService.createPrivate(privateChannelRequestDto);
-        return ResponseEntity.ok().body(channelResponseDto);
-    }
+    log.info("POST /api/channels/public 채널 생성 성공 - id: {}, name: {}", createdChannel.id(),
+        createdChannel.name());
 
-    @PatchMapping("/{channel-id}") // 수정
-    public ResponseEntity<ChannelResponseDto> updatePublicChannel(@PathVariable("channel-id") UUID channelId,
-                                                                        @RequestBody UpdateChannelRequestDto updateChannelRequestDto
-    ) {
-        UpdateChannelResponseDto updateChannelResponseDto = channelService.update(channelId, updateChannelRequestDto);
-        return ResponseEntity.ok(channelMapper.toChannelResponseDto(updateChannelResponseDto));
-    }
+    return ResponseEntity
+        .status(HttpStatus.CREATED)
+        .body(createdChannel);
+  }
 
-    @DeleteMapping("/{channel-id}") // 채널 삭제
-    public ResponseEntity<String> deleteChannel(@PathVariable("channel-id") UUID channelId) {
-        channelService.delete(channelId);
-        return ResponseEntity.ok().body("Channel deleted successfully");
-    }
+  @PostMapping(path = "private")
+  public ResponseEntity<ChannelDto> create(
+      @RequestBody @Valid PrivateChannelCreateRequest request) {
+    log.info("POST /api/channels/private 채널 생성 요청 시작");
 
-    @GetMapping// 사용자의 모든 채널 조회
-    public ResponseEntity<ChannelResponseDtos> getChannelsByUser(@RequestParam("user-id") UUID userId
-    ) {
-        ChannelResponseDtos channelResponseDtos = channelService.findAllByUserId(userId);
-        return ResponseEntity.ok(channelResponseDtos);
-    }
+    ChannelDto createdChannel = channelService.create(request);
+
+    log.info("POST /api/channels/private 채널 생성 성공 - id: {}", createdChannel.id());
+
+    return ResponseEntity
+        .status(HttpStatus.CREATED)
+        .body(createdChannel);
+  }
+
+  @PatchMapping(path = "{channelId}")
+  public ResponseEntity<ChannelDto> update(
+      @PathVariable("channelId") UUID channelId,
+      @RequestBody @Valid PublicChannelUpdateRequest request) {
+    log.info("PATCH /api/channels/{channelId} 채널 수정 요청 시작 - channelId: {}", channelId);
+
+    ChannelDto updatedChannel = channelService.update(channelId, request);
+
+    log.info("PATCH /api/channels/{channelId} 채널 수정 성공 - channelId: {}",
+        channelId);
+
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(updatedChannel);
+  }
+
+  @DeleteMapping(path = "{channelId}")
+  public ResponseEntity<Void> delete(@PathVariable("channelId") UUID channelId) {
+    log.info("DELETE /api/channels/{channelId} 채널 삭제 요청 시작 - channelId: {}", channelId);
+
+    channelService.delete(channelId);
+
+    log.info("DELETE /api/channels/{channelId} 채널 삭제 성공 - channelId: {}",
+        channelId);
+
+    return ResponseEntity
+        .status(HttpStatus.NO_CONTENT)
+        .build();
+  }
+
+  @GetMapping
+  public ResponseEntity<List<ChannelDto>> findAll(@RequestParam("userId") UUID userId) {
+    List<ChannelDto> channels = channelService.findAllByUserId(userId);
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(channels);
+  }
 }

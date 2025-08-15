@@ -1,49 +1,14 @@
 package com.sprint.mission.discodeit.mapper;
-import com.sprint.mission.discodeit.dto.MessageService.MessageRequestDto;
-import com.sprint.mission.discodeit.dto.MessageService.MessageResponseDto;
-import com.sprint.mission.discodeit.dto.MessageService.MessageResponseDtos;
-import com.sprint.mission.discodeit.dto.MessageService.UpdateMessageResponseDto;
+
+import com.sprint.mission.discodeit.dto.data.MessageDto;
 import com.sprint.mission.discodeit.entity.Message;
-import org.springframework.stereotype.Component;
-import java.util.List;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-public class MessageMapper {
-    // Request
-    public Message toMessage(MessageRequestDto messageRequestDto) {
-        return new Message(
-                messageRequestDto.content(),
-                messageRequestDto.channelId(),
-                messageRequestDto.authorId()
-        );
-    }
+@Mapper(componentModel = "spring", uses = {BinaryContentMapper.class, UserMapper.class})
+public interface MessageMapper {
 
-    // Response
-    public MessageResponseDto toMessageResponseDto(Message message) {
-        return new MessageResponseDto(
-                message.getId(),
-                message.getContent(),
-                message.getChannelId(),
-                message.getAuthorId()
-        );
-    }
+  @Mapping(target = "channelId", source = "channel.id")
+  MessageDto toDto(Message message);
 
-    // Response
-    public MessageResponseDtos toMessageResponseDtos(List<Message> messages) {
-        return new MessageResponseDtos(
-            messages
-                .stream()
-                .map(this::toMessageResponseDto)
-                .toList()
-        );
-    }
-
-    public UpdateMessageResponseDto toUpdateMessageResponseDto(Message message) {
-        return new UpdateMessageResponseDto(
-                message.getContent(),
-                message.getChannelId(),
-                message.getAuthorId(),
-                message.getId()
-        );
-    }
 }

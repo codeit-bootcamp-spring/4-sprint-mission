@@ -1,0 +1,27 @@
+# port settings
+server:
+  port: 8080
+# db settings
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # Auto-update schema during development
+    show-sql: true            # Show SQL logs for debugging
+    properties:
+      hibernate:
+        format_sql: true
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  # Allow overriding beans in tests
+  main:
+    allow-bean-definition-overriding: true
+
+# logging settings
+logging:
+  level:
+    root: WARN
+    com.sprint: DEBUG
+    org.hibernate.SQL: DEBUG

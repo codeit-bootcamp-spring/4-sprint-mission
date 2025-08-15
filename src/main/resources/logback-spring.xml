@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+  <!-- 전역 로거(Root Logger) 설정 -->
+  <!-- 기본적으로 INFO 레벨 이상의 모든 로그를 CONSOLE과 FILE에 기록함 -->
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+
+  <property name="LOG_PATH" value="./.logs"/>
+  <property name="LOG_FILE" value="discodeit.log"/>
+
+
+  <!--콘솔에 로그 기록-->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!--파일에 로그 기록-->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!--일자별로 롤링-->
+      <fileNamePattern>${LOG_PATH}/discodeit.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <!--30일간 보관-->
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- 특정 패키지에 대한 로거 설정 -->
+  <!-- com.example.myapp 패키지의 로그는 DEBUG 레벨부터 기록합 -->
+  <!-- additivity="false"는 상위(root) 로거로의 전파를 막아 중복 로깅을 방지 -->
+  <logger name="com.example.myapp" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </logger>
+
+
+</configuration>
