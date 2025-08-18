@@ -3,18 +3,29 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.request.PrivateChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.request.PublicChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.request.PublicChannelUpdateRequest;
-import com.sprint.mission.discodeit.entity.*;
-import com.sprint.mission.discodeit.exception.BusinessLogicException;
-import com.sprint.mission.discodeit.exception.ExceptionCode;
-import com.sprint.mission.discodeit.repository.*;
+import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.entity.ChannelType;
+import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.channel.ChannelAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.channel.PrivateChannelUpdateException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.repository.ChannelRepository;
+import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.ReadStatusRepository;
+import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class BasicChannelService implements ChannelService {
     private final ChannelRepository channelRepository;
@@ -25,28 +36,28 @@ public class BasicChannelService implements ChannelService {
     @Transactional
     @Override
     public Channel createPublicChannel(PublicChannelCreateRequest publicChannelCreateRequest) {
+        log.debug("공개 채널 생성 호출");
+        isDuplicatedChannelName(publicChannelCreateRequest.name());
         Channel channel = new Channel(publicChannelCreateRequest.name(), publicChannelCreateRequest.description());
         channelRepository.save(channel);
-
+        log.info("공개 채널 생성 완료 id = {}", channel.getId());
         return channel;
     }
 
     @Transactional
     @Override
     public Channel createPrivateChannel(PrivateChannelCreateRequest privateChannelCreateRequest) {
-        for (UUID id : privateChannelCreateRequest.participantIds()) {
-            validateUser(id);
-        }
+        log.debug("비공개 채널 생성 호출");
 
         Channel channel = new Channel();
         channelRepository.save(channel);
 
         for (UUID id : privateChannelCreateRequest.participantIds()) {
-            User user = userRepository.findById(id)
-                    .orElseThrow(() -> new BusinessLogicException(ExceptionCode.USER_NOT_FOUND));
+            User user = validateUser(id);
             ReadStatus readStatus = new ReadStatus(user, channel);
             readStatusRepository.save(readStatus);
         }
+        log.info("비공개 채널 생성 완료 id = {}", channel.getId());
         return channel;
     }
 
@@ -66,42 +77,55 @@ public class BasicChannelService implements ChannelService {
     @Transactional
     @Override
     public Channel updateChannel(UUID channelId, PublicChannelUpdateRequest publicChannelUpdateRequest) {
-        validateActiveChannel(channelId);
-        validatePublicChannel(channelId);
+        log.debug("공개 채널 수정 호출 id = {}", channelId);
+        Channel findChannel = validateChannel(channelId);
+        validatePublicChannel(findChannel);
 
-        Channel findChannel = channelRepository.findById(channelId)
-                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND));
         Optional.ofNullable(publicChannelUpdateRequest.newName())
                 .ifPresent(findChannel::setName);
         Optional.ofNullable(publicChannelUpdateRequest.newDescription())
                 .ifPresent(findChannel::setDescription);
 
         channelRepository.save(findChannel);
+
+        log.info("공개 채널 수정 완료 id = {}", channelId);
         return findChannel;
     }
 
     @Override
     public void deleteChannel(UUID id) {
-        validateActiveChannel(id);
-        Channel channel = channelRepository.findById(id)
-                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND));
+        log.debug("채널 삭제 호출 id = {}", id);
+        Channel channel = validateChannel(id);
+        log.info("채널 삭제 완료 id = {}", id);
         channelRepository.delete(channel);
     }
 
-    private void validateActiveChannel(UUID id) {
-        if (!channelRepository.existsById(id)) {
-            throw new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND);
+    private Channel validateChannel(UUID id) {
+        return channelRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("해당 채널을 찾을 수 없음 id = {}", id);
+                    throw new ChannelNotFoundException(ErrorCode.CHANNEL_NOT_FOUND, Map.of("channelId", id));
+                });
+    }
+
+    private void validatePublicChannel(Channel channel) {
+        if (channel.getType().equals(ChannelType.PRIVATE)) {
+            log.warn("비공개 채널은 수정할 수 없음 id = {}, type = {}", channel.getId(), channel.getType());
+            throw new PrivateChannelUpdateException(ErrorCode.PRIVATE_CHANNEL_CANNOT_UPDATE, Map.of("channelId", channel.getId()));
         }
     }
 
-    private void validatePublicChannel(UUID id) {
-        if (channelRepository.findById(id)
-                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND))
-                .getType().equals(ChannelType.PRIVATE))
-            throw new BusinessLogicException(ExceptionCode.PRIVATE_CHANNEL_CANNOT_UPDATE);
+    private User validateUser(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(() -> {
+            log.warn("해당 유저가 존재하지 않음 id = {}", userId);
+            throw new UserNotFoundException(ErrorCode.USER_NOT_FOUND, Map.of("userId", userId));
+        });
     }
 
-    private void validateUser(UUID userId) {
-        if (!userRepository.existsById(userId)) throw new BusinessLogicException(ExceptionCode.USER_NOT_FOUND);
+    private void isDuplicatedChannelName(String channelName) {
+        if (channelRepository.existsByName(channelName)) {
+            log.warn("채널이름 중복 name = {}", channelName);
+            throw new ChannelAlreadyExistsException(ErrorCode.AlREADY_EXISTS_CHANNEL_NAME, Map.of("channelName", channelName));
+        }
     }
 }

@@ -5,12 +5,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @Entity
 @Table(name = "channels")
 public class Channel extends BaseUpdatableEntity {
-    @Column
+    @Column()
     private String name;
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -30,6 +32,14 @@ public class Channel extends BaseUpdatableEntity {
         this.type = ChannelType.PRIVATE;
     }
 
+    private Channel(UUID uuid, String name, String description, ChannelType type) {
+        super();
+        setId(uuid);
+        this.name = name;
+        this.description = description;
+        this.type = type;
+    }
+
     @Override
     public String toString() {
         if (type == ChannelType.PUBLIC) {
@@ -47,5 +57,9 @@ public class Channel extends BaseUpdatableEntity {
                     "}";
         }
         return "Invalid type provided";
+    }
+
+    public static Channel of(UUID uuid, String name, String description, ChannelType type) {
+        return new Channel(uuid, name, description, type);
     }
 }

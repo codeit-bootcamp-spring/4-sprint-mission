@@ -15,6 +15,7 @@ import java.util.UUID;
 public interface MessageRepository extends JpaRepository<Message, UUID> {
     List<Message> findAll();
 
+    @EntityGraph(attributePaths = {"attachments", "author"})
     Optional<Message> findById(UUID id);
 
     void delete(Message message);
@@ -25,4 +26,8 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     Page<Message> findAllByChannel_Id(UUID channelId, Pageable pageable);
 
     Optional<Message> findTopByChannelOrderByUpdatedAtDesc(Channel channel);
+
+    Page<Message> findAllByOrderByIdDescCreatedAtDesc(Pageable pageable);
+
+    Page<Message> findByIdLessThanOrderByIdDescCreatedAtDesc(Instant cursor, Pageable pageable);
 }

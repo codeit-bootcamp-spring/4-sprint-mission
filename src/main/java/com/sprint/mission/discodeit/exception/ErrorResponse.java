@@ -3,14 +3,17 @@ package com.sprint.mission.discodeit.exception;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.ConstraintViolation;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.validation.BindingResult;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
+@NoArgsConstructor
 @Schema(description = "전역 예외 처리")
 public class ErrorResponse {
     private List<FieldError> fieldErrors;
@@ -21,16 +24,29 @@ public class ErrorResponse {
     private Instant timestamp;
     @Schema(description = "에러 내용", example = "Bad Request!")
     private String message;
+    private String code;
+    private String exceptionType;
+    private Map<String, Object> details;
+
 
     private ErrorResponse(List<FieldError> fieldErrors, List<ConstraintViolationError> violationErrors) {
         this.fieldErrors = fieldErrors;
         this.violationErrors = violationErrors;
     }
 
-    private ErrorResponse(ExceptionCode exceptionCode, Instant timestamp, String message) {
-        this.status = exceptionCode.getStatus();
+    private ErrorResponse(ErrorCode errorCode, Instant timestamp, String message) {
+        this.status = errorCode.getStatus();
         this.timestamp = timestamp;
         this.message = message;
+    }
+
+    public ErrorResponse(int status, Instant timestamp, String message, String code, String exceptionType, Map<String, Object> details) {
+        this.status = status;
+        this.timestamp = timestamp;
+        this.message = message;
+        this.code = code;
+        this.exceptionType = exceptionType;
+        this.details = details;
     }
 
     public static ErrorResponse of(BindingResult bindingResult) {
@@ -42,7 +58,11 @@ public class ErrorResponse {
     }
 
     public static ErrorResponse of(BusinessLogicException businessLogicException) {
-        return new ErrorResponse(businessLogicException.getExceptionCode(), Instant.now(), businessLogicException.getMessage());
+        return new ErrorResponse(businessLogicException.getErrorCode(), Instant.now(), businessLogicException.getMessage());
+    }
+
+    public static ErrorResponse of(DiscodeitException discodeitException) {
+        return new ErrorResponse(discodeitException.getErrorCode().getStatus(), Instant.now(), discodeitException.getMessage(), discodeitException.getErrorCode().name(), discodeitException.getClass().getSimpleName(), discodeitException.getDetails());
     }
 
     @Getter

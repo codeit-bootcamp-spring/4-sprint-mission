@@ -28,6 +28,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(DiscodeitException.class)
+    public ResponseEntity handleDiscodeitException(DiscodeitException discodeitException) {
+        final ErrorResponse response = ErrorResponse.of(discodeitException);
+
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     @ExceptionHandler(BusinessLogicException.class)
     public ResponseEntity handleBusinessLogicException(BusinessLogicException businessLogicException) {
         final ErrorResponse response = ErrorResponse.of(businessLogicException);

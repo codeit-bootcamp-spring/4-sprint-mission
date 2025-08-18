@@ -28,7 +28,7 @@ public class ReadStatus extends BaseUpdatableEntity {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "channel_id", nullable= false)
+    @JoinColumn(name = "channel_id", nullable = false)
     private Channel channel;
 
     public ReadStatus(User user, Channel channel) {
@@ -43,6 +43,11 @@ public class ReadStatus extends BaseUpdatableEntity {
         this.user = user;
         this.channel = channel;
         this.lastReadAt = lastReadAt;
+    }
+
+    private ReadStatus(UUID id, User user, Channel channel) {
+        this(user, channel);
+        setId(id);
     }
 
     @Override
@@ -61,10 +66,8 @@ public class ReadStatus extends BaseUpdatableEntity {
     public UUID getChannelId() {
         return channel.getId();
     }
-//    public ReadStatus(UUID userId, UUID channelId, Instant lastReadAt) {
-//        super();
-//        this.userId = userId;
-//        this.channelId = channelId;
-//        this.lastReadAt = lastReadAt;
-//    }
+
+    public static ReadStatus of(UUID id, User user, Channel channel) {
+        return new ReadStatus(id, user, channel);
+    }
 }

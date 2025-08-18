@@ -5,17 +5,21 @@ import com.sprint.mission.discodeit.dto.request.ReadStatusUpdateRequest;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.BusinessLogicException;
-import com.sprint.mission.discodeit.exception.ExceptionCode;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.read_status.ReadStatusAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.read_status.ReadStatusNotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ReadStatusService;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,13 +31,10 @@ public class BasicReadStatusService implements ReadStatusService {
     @Transactional
     @Override
     public ReadStatus create(ReadStatusCreateRequest readStatusCreateRequest) {
-        validateUser(readStatusCreateRequest);
-        validateChannel(readStatusCreateRequest);
+        User user = validateUser(readStatusCreateRequest);
+        Channel channel = validateChannel(readStatusCreateRequest);
         existsByUserAndChannel(readStatusCreateRequest);
-        User user = userRepository.findById(readStatusCreateRequest.userId())
-                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.USER_NOT_FOUND));
-        Channel channel = channelRepository.findById(readStatusCreateRequest.channelId())
-                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.CHANNEL_NOT_FOUND));
+
         ReadStatus readStatus = new ReadStatus(user, channel, readStatusCreateRequest.lastReadAt());
         readStatusRepository.save(readStatus);
         return readStatus;
@@ -48,7 +49,7 @@ public class BasicReadStatusService implements ReadStatusService {
     @Transactional
     @Override
     public ReadStatus update(UUID id, ReadStatusUpdateRequest readStatusUpdateRequest) {
-        ReadStatus findReadStatus = readStatusRepository.findById(id).orElseThrow(() -> new BusinessLogicException(ExceptionCode.READSTATUS_NOT_FOUND));
+        ReadStatus findReadStatus = readStatusRepository.findById(id).orElseThrow(() -> new ReadStatusNotFoundException(ErrorCode.READSTATUS_NOT_FOUND, Map.of("readStatusId", id)));
 
         Optional.ofNullable(readStatusUpdateRequest.newLastReadAt()).ifPresent(findReadStatus::setLastReadAt);
         readStatusRepository.save(findReadStatus);
@@ -60,20 +61,20 @@ public class BasicReadStatusService implements ReadStatusService {
         readStatusRepository.deleteById(id);
     }
 
-    private void validateUser(ReadStatusCreateRequest readStatusCreateDto) {
-        if (!userRepository.existsById(readStatusCreateDto.userId()))
-            throw new BusinessLogicException(ExceptionCode.CHANNEL_OR_USER_NOT_FOUND);
+    private User validateUser(ReadStatusCreateRequest readStatusCreateRequest) {
+        return userRepository.findById(readStatusCreateRequest.userId())
+                .orElseThrow(() -> new ReadStatusNotFoundException(ErrorCode.CHANNEL_OR_USER_NOT_FOUND, Map.of("userId", readStatusCreateRequest.userId())));
     }
 
-    private void validateChannel(ReadStatusCreateRequest readStatusCreateDto) {
-        if (!channelRepository.existsById(readStatusCreateDto.channelId()))
-            throw new BusinessLogicException(ExceptionCode.CHANNEL_OR_USER_NOT_FOUND);
+    private Channel validateChannel(ReadStatusCreateRequest readStatusCreateRequest) {
+        return channelRepository.findById(readStatusCreateRequest.channelId())
+                .orElseThrow(() -> new ReadStatusNotFoundException(ErrorCode.CHANNEL_OR_USER_NOT_FOUND, Map.of("channelId", readStatusCreateRequest.channelId())));
 
     }
 
     private void existsByUserAndChannel(ReadStatusCreateRequest readStatusCreateDto) {
         if (readStatusRepository.existsByUser_IdAndChannel_Id(readStatusCreateDto.userId(), readStatusCreateDto.channelId()))
-            throw new BusinessLogicException(ExceptionCode.READSTATUS_ALREADY_EXISTS);
+            throw new ReadStatusAlreadyExistsException(ErrorCode.READSTATUS_ALREADY_EXISTS, Map.of("userId", readStatusCreateDto.userId(), "channelId", readStatusCreateDto.channelId()));
     }
 
 }
