@@ -1,0 +1,33 @@
+spring:
+  config:
+    activate:
+      on-profiles: dev # dev 프로필 활성화 시 이 설정 적용
+
+  datasource:
+    url: jdbc:h2:mem:testdb # 메모리 기반 H2 DB (인메모리라 서버 재시작 시 데이터 초기화)
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    defer-datasource-initialization: true # 데이터 소스 초기화 시점 지연(sql 파일 실행 시점 뒤로)
+    show-sql: true # 실행되는 SQL 쿼리 콘솔 출력
+    properties:
+      hibernate:
+        format_sql: true # SQL 쿼리를 보기 좋게 포맷팅
+  sql:
+    init:
+      encoding: UTF-8
+      mode: always #data.sql 항상 실행
+  h2:
+    console:
+      enabled: true       # H2 콘솔 활성화
+      path: /h2-console   # 접속 경로 지정 (기본: /h2-console)
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+server:
+  port: 8080
