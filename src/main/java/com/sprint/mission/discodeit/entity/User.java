@@ -1,5 +1,6 @@
 package com.sprint.mission.discodeit.entity;
 
+import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
 import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -21,7 +22,7 @@ public class User extends BaseUpdatableEntity {
     @Column(nullable = false)
     private String password;
 
-    @OneToOne(cascade = {CascadeType.PERSIST,CascadeType.REMOVE}, orphanRemoval = true)
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     @JoinColumn(name = "profile_id")
     private BinaryContent profile;
 
@@ -29,6 +30,22 @@ public class User extends BaseUpdatableEntity {
     private UserStatus status;
 
     public User(String username, String password, String email, BinaryContent profile) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.profile = profile;
+    }
+
+    public User(UserCreateRequest request, BinaryContent profile) {
+        super();
+        this.username = request.username();
+        this.email = request.email();
+        this.password = request.password();
+        this.profile = profile;
+    }
+
+    private User(UUID uuid, String username, String email, String password, BinaryContent profile) {
+        setId(uuid);
         this.username = username;
         this.email = email;
         this.password = password;
@@ -50,4 +67,9 @@ public class User extends BaseUpdatableEntity {
     public UUID getProfileId() {
         return profile.getId();
     }
+
+    public static User of(UUID uuid, String username, String email, String password, BinaryContent profile) {
+        return new User(uuid, username, email, password, profile);
+    }
 }
+

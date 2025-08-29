@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 create table binary_contents
 (
     id           uuid                     default uuid_generate_v4() not null

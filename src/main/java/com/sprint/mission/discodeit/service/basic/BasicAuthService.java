@@ -2,12 +2,14 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.request.LoginRequest;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.exception.BusinessLogicException;
-import com.sprint.mission.discodeit.exception.ExceptionCode;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.user.UserAuthException;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -16,14 +18,11 @@ public class BasicAuthService implements AuthService {
 
     @Override
     public User login(LoginRequest loginRequest) {
-        if (loginRequest.password() == null || loginRequest.username() == null)
-            throw new IllegalArgumentException("Username or Password is null");
-
         if (!userRepository.existsByUsername(loginRequest.username()))
-            throw new BusinessLogicException(ExceptionCode.USER_NOT_FOUND);
+            throw new UserAuthException(ErrorCode.USER_NOT_FOUND, Map.of("username", loginRequest.username()));
         User findUser = userRepository.findByUsername(loginRequest.username());
         if (!findUser.getPassword().equals(loginRequest.password()))
-            throw new BusinessLogicException(ExceptionCode.WRONG_PASSWORD);
+            throw new UserAuthException(ErrorCode.WRONG_PASSWORD, Map.of("userId", findUser.getId(), "password", "Wrong Password"));
 
         return findUser;
     }

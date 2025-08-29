@@ -1,0 +1,62 @@
+25-08-28 16:35:23 [ |  | ] -
+                Starting ChannelControllerTest using Java 17.0.12 with PID 24054 (started by apple in /Users/apple/Documents/codeit/4-sprint-mission)
+25-08-28 16:35:23 [ |  | ] -
+                The following 1 profile is active: "dev"
+25-08-28 16:35:25 [ |  | ] -
+                Adding welcome page: class path resource [static/index.html]
+25-08-28 16:35:26 [ |  | ] -
+                Initializing Spring TestDispatcherServlet ''
+25-08-28 16:35:26 [ |  | ] -
+                Initializing Servlet ''
+25-08-28 16:35:26 [ |  | ] -
+                Completed initialization in 1 ms
+25-08-28 16:35:26 [ |  | ] -
+                Started ChannelControllerTest in 3.481 seconds (process running for 9.722)
+25-08-28 16:35:27 [11a22833-2085-4c59-8412-41b3ee11bec3 | POST | /api/channels/private] -
+                POST /api/channels/private 호출
+25-08-28 16:35:27 [95091994-2718-41c3-a53b-60282e316458 | POST | /api/channels/public] -
+                POST /api/channels/public 호출
+25-08-28 16:35:27 [ |  | ] -
+                Could not detect default configuration classes for test class [com.sprint.mission.discodeit.controller.MessageControllerTest]: MessageControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+25-08-28 16:35:27 [ |  | ] -
+                Found @SpringBootConfiguration com.sprint.mission.discodeit.DiscodeitApplication for test class com.sprint.mission.discodeit.controller.MessageControllerTest
+25-08-28 16:35:27 [ |  | ] -
+                Starting MessageControllerTest using Java 17.0.12 with PID 24054 (started by apple in /Users/apple/Documents/codeit/4-sprint-mission)
+25-08-28 16:35:27 [ |  | ] -
+                The following 1 profile is active: "dev"
+25-08-28 16:35:27 [ |  | ] -
+                Adding welcome page: class path resource [static/index.html]
+25-08-28 16:35:28 [ |  | ] -
+                Initializing Spring TestDispatcherServlet ''
+25-08-28 16:35:28 [ |  | ] -
+                Initializing Servlet ''
+25-08-28 16:35:28 [ |  | ] -
+                Completed initialization in 0 ms
+25-08-28 16:35:28 [ |  | ] -
+                Started MessageControllerTest in 0.513 seconds (process running for 11.186)
+25-08-28 16:35:28 [a9749355-c9f6-4742-94f8-a1d1d9c92d54 | POST | /api/messages] -
+                POST /api/messages 호출
+25-08-28 16:35:28 [ |  | ] -
+                Could not detect default configuration classes for test class [com.sprint.mission.discodeit.controller.UserControllerTest]: UserControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+25-08-28 16:35:28 [ |  | ] -
+                Found @SpringBootConfiguration com.sprint.mission.discodeit.DiscodeitApplication for test class com.sprint.mission.discodeit.controller.UserControllerTest
+25-08-28 16:35:28 [ |  | ] -
+                Starting UserControllerTest using Java 17.0.12 with PID 24054 (started by apple in /Users/apple/Documents/codeit/4-sprint-mission)
+25-08-28 16:35:28 [ |  | ] -
+                The following 1 profile is active: "dev"
+25-08-28 16:35:28 [ |  | ] -
+                Adding welcome page: class path resource [static/index.html]
+25-08-28 16:35:28 [ |  | ] -
+                Initializing Spring TestDispatcherServlet ''
+25-08-28 16:35:28 [ |  | ] -
+                Initializing Servlet ''
+25-08-28 16:35:28 [ |  | ] -
+                Completed initialization in 2 ms
+25-08-28 16:35:28 [ |  | ] -
+                Started UserControllerTest in 0.353 seconds (process running for 11.624)
+25-08-28 16:35:28 [730245a0-e62a-4c08-a3e1-89ce7ae33861 | POST | /api/users] -
+                POST /api/users 호출
+25-08-28 16:35:28 [6fc30c2b-c62d-4a70-89ef-4a352d0ae6c2 | POST | /api/users] -
+                Resolved [org.springframework.web.multipart.support.MissingServletRequestPartException: Required part 'userCreateRequest' is not present.]
+25-08-28 16:35:28 [2c3e1fc6-a7de-4625-b1a2-d3533558ecaf | POST | /api/users] -
+                POST /api/users 호출

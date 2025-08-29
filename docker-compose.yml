@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "15432:5432"
+    volumes:
+      - discodeit-data:/var/lib/postgresql/data
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend
+
+  app:
+    build: .
+    container_name: spring-app
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      AWS_S3_ACCESS_KEY: ${AWS_S3_ACCESS_KEY}
+      AWS_S3_SECRET_KEY: ${AWS_S3_SECRET_KEY}
+      AWS_S3_REGION: ${AWS_S3_REGION}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      PRESIGNED-URL-EXPIRATION: ${AWS_S3_PRESIGNED_URL_EXPIRATION}
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - ./${STORAGE_LOCAL_ROOT_PATH}:/${STORAGE_LOCAL_ROOT_PATH}
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  discodeit-data: { }

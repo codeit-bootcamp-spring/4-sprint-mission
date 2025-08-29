@@ -2,24 +2,22 @@ package com.sprint.mission.discodeit.storage;
 
 import com.sprint.mission.discodeit.dto.BinaryContentDto;
 import com.sprint.mission.discodeit.exception.BusinessLogicException;
-import com.sprint.mission.discodeit.exception.ExceptionCode;
+import com.sprint.mission.discodeit.exception.ErrorCode;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-@Component
-@ConditionalOnProperty(name = "discodeit.storage.type", havingValue = "local")
 public class LocalBinaryContentStorage implements BinaryContentStorage {
     @Value(" ${discodeit.storage.local.root-path}")
     private Path root;
@@ -64,7 +62,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
         InputStream inputStream = null;
         Path path = resolve(binaryContentId);
         if (Files.notExists(path)) {
-            throw new BusinessLogicException(ExceptionCode.BINARY_CONTENT_NOT_FOUND);
+            throw new BusinessLogicException(ErrorCode.BINARY_CONTENT_NOT_FOUND);
         } else {
             try {
                 inputStream = Files.newInputStream(path);

@@ -1,11 +1,16 @@
 package com.sprint.mission.discodeit.entity;
 
 import com.sprint.mission.discodeit.entity.base.BaseEntity;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -34,6 +39,11 @@ public class BinaryContent extends BaseEntity implements Serializable {
         this.fileName = file.getOriginalFilename();
     }
 
+    private BinaryContent(UUID id, MultipartFile file) {
+        this(file);
+        setId(id);
+    }
+
     @Override
     public String toString() {
         return "BinaryContent{" +
@@ -41,6 +51,10 @@ public class BinaryContent extends BaseEntity implements Serializable {
                 ", createdAt=" + super.getCreatedAt() +
                 ", contentType=" + contentType +
                 '}';
+    }
+
+    public static BinaryContent of(UUID id, MultipartFile file) {
+        return new BinaryContent(id, file);
     }
 }
 

@@ -29,6 +29,11 @@ public class UserStatus extends BaseUpdatableEntity {
         this.lastActiveAt = lastActiveAt;
     }
 
+    public UserStatus(User testUser) {
+        super();
+        this.user = testUser;
+    }
+
     public boolean isRecentlyActive() {
         return lastActiveAt.isAfter(Instant.now().minusSeconds(300));
     }
