@@ -1,0 +1,43 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+        - .env
+    ports:
+      - '8081:80'
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+
+      STORAGE_TYPE: ${STORAGE_TYPE}
+      STORAGE_LOCAL_ROOT_PATH: ${STORAGE_LOCAL_ROOT_PATH}
+
+      AWS_CREDENTIALS_ACCESS_KEY: ${AWS_CREDENTIAL_ACCESS_KEY}
+      AWS_CREDENTIALS_SECRET_KEY: ${AWS_CREDENTIAL_SECRET_KEY}
+      AWS_REGION: ${AWS_S3_REGION}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_S3_PRESIGNED_URL_EXPIRATION: ${AWS_S3_PRESIGNED_URL_EXPIRATION}
+
+    depends_on:
+      - postgres
+    volumes:
+      - binary-storage:/app/BinaryContentStorage
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  binary-storage:
+  pgdata:
