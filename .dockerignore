@@ -1,0 +1,21 @@
+# OS / IDE 관련
+*.DS_Store
+.idea
+.vscode
+*.iml
+
+# 빌드 산출물
+/build
+/out
+/target
+*.class
+*.jar
+*.war
+
+# Git 관련
+.git
+.gitignore
+
+# 로그 및 임시파일
+*.log
+*.tmp
