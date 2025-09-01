@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8"/>
+    <title>DB 기반 S3 파일 관리 (RDS 연동)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 980px; margin: 24px auto; padding: 0 12px; }
+        h1 { margin: 0 0 16px; }
+        form, .toolbar, .grid { margin: 12px 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+        .thumb { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; background: #f3f4f6; }
+        .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .muted { color: #6b7280; font-size: 12px; }
+        input[type="text"] { padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; width: 280px; }
+        input[type="file"] { padding: 6px; }
+        button { padding: 8px 12px; border: 1px solid #e5e7eb; background: #111827; color: #fff; border-radius: 8px; cursor: pointer; }
+        button.secondary { background: #fff; color: #111827; }
+        button.danger { background: #b91c1c; border-color: #b91c1c; }
+        .toast { position: fixed; right: 16px; bottom: 16px; background: #111827; color: #fff; padding: 10px 12px; border-radius: 8px; display: none; }
+        .badge { display:inline-block; font-size:11px; padding:2px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; border:1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+<h1>DB 기반 S3 파일 업로드 · 조회</h1>
+
+<!-- 업로드 폼 (업로드 → S3 저장 + DB 영속화) -->
+<form id="uploadForm" class="card" onsubmit="return false;">
+    <div class="row" style="justify-content: space-between;">
+        <div>
+            <input type="file" id="fileInput" name="file" required/>
+            <button id="btnUpload">업로드</button>
+        </div>
+        <div class="row">
+            <input type="text" id="prefix" placeholder="prefix (예: images/2025/08)"/>
+            <button class="secondary" id="btnReload" type="button">DB목록 새로고침</button>
+        </div>
+    </div>
+    <div class="muted">
+        업로드 성공 시 서버가 <code>201 Created</code> + <code>Location: /api/api/files/db/{id}</code> 를 반환하고,
+        본문에는 DB에 저장된 메타데이터 DTO를 JSON으로 내려줍니다.
+    </div>
+</form>
+
+<!-- 파일 목록 / 갤러리 (DB에서 조회) -->
+<div class="grid" id="grid"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+    const grid = document.getElementById('grid');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg) {
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 1800);
+    }
+
+    function humanSize(bytes) {
+        const units = ['B','KB','MB','GB','TB'];
+        let i = 0, n = bytes;
+        while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+        return (Math.round(n * 10) / 10) + ' ' + units[i];
+    }
+
+    function fmt(ts) {
+        try { return new Date(ts).toLocaleString(); } catch { return '-'; }
+    }
+
+    async function loadList() {
+        const prefix = document.getElementById('prefix').value.trim();
+        let url;
+        if (prefix) {
+            url = new URL(location.origin + '/api/files/db/listByPrefix');
+            url.searchParams.set('prefix', prefix);
+        } else {
+            url = new URL(location.origin + '/api/files/db/list');
+        }
+
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) {
+            showToast('목록 불러오기 실패: ' + res.status);
+            return;
+        }
+        const items = await res.json();
+        render(items);
+    }
+
+    function render(items) {
+        grid.innerHTML = '';
+        items.forEach(it => {
+            // DTO 필드: id, key, url, size, contentType, originalFilename, uploadedAt, createdAt, updatedAt
+            const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(it.key || '');
+            const name = (it.originalFilename && it.originalFilename.trim()) ? it.originalFilename : (it.key ? it.key.split('/').pop() : 'file');
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.id = it.id;
+            card.innerHTML = `
+        ${isImage ? `<img class="thumb" src="${it.url}" alt="${name}"/>`
+                : `<div class="thumb" style="display:flex;align-items:center;justify-content:center;">${name}</div>`}
+        <div style="margin-top:8px;">
+          <div style="font-weight:600; font-size:14px; word-break:break-all;">${it.key}</div>
+          <div class="muted">${humanSize(it.size)} · ${it.contentType || 'content-type?'} · 업로드: ${fmt(it.uploadedAt)}</div>
+          <div class="muted">ID: <span class="badge">${it.id}</span></div>
+        </div>
+        <div class="row" style="margin-top:8px; gap:6px;">
+          <a href="/api/files/download?key=${encodeURIComponent(it.key)}&filename=${encodeURIComponent(name)}">다운로드</a>
+          <a href="${it.url}" target="_blank" class="secondary">원본열기</a>
+          <button type="button" class="secondary" data-copy="${it.url}">링크복사</button>
+          <button type="button" class="danger" data-del="${it.id}">삭제</button>
+        </div>
+      `;
+
+            // 복사
+            const copyBtn = card.querySelector('button[data-copy]');
+            copyBtn.addEventListener('click', async () => {
+                await navigator.clipboard.writeText(copyBtn.getAttribute('data-copy'));
+                showToast('URL 복사 완료');
+            });
+
+            // 삭제 (DB 레코드 삭제)
+            const delBtn = card.querySelector('button[data-del]');
+            delBtn.addEventListener('click', async () => {
+                const id = delBtn.getAttribute('data-del');
+                if (!confirm('이 항목을 삭제하시겠습니까? (DB 레코드만 삭제됩니다)')) return;
+                const res = await fetch(`/api/files/db/${id}`, { method: 'DELETE' });
+                if (res.status === 204) {
+                    card.remove();
+                    showToast('삭제 완료 (DB)');
+                } else {
+                    showToast('삭제 실패: ' + res.status);
+                }
+            });
+
+            grid.appendChild(card);
+        });
+    }
+
+    document.getElementById('btnReload').addEventListener('click', loadList);
+
+    // 업로드: /api/files/upload (201 + Location: /api/files/db/{id}, Body: FileMetadataDto)
+    document.getElementById('btnUpload').addEventListener('click', async () => {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return showToast('파일을 선택하세요');
+
+        const fd = new FormData();
+        fd.append('file', file);
+
+        const res = await fetch('/api/files/db/upload', { method: 'POST', body: fd });
+        if (res.status === 201) {
+            // 업로드 성공 → 본문 DTO 활용하여 즉시 반영 (낙관적 렌더링)
+            let dto = null;
+            try { dto = await res.json(); } catch {}
+            showToast('업로드 성공');
+            if (dto && dto.id) {
+                render([dto, ...Array.from(grid.children).map(c => ({
+                    id: c.dataset.id,
+                    key: c.querySelector('div[style*="font-weight:600"]').textContent,
+                    url: c.querySelector('a[target="_blank"]').getAttribute('href'),
+                    size: 0,
+                    contentType: '',
+                    originalFilename: '',
+                    uploadedAt: new Date().toISOString()
+                }))]);
+            } else {
+                await loadList(); // 본문 없거나 파싱 실패 시 전체 새로고침
+            }
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        } else {
+            const msg = await res.text().catch(() => '업로드 실패');
+            showToast('업로드 실패: ' + msg);
+        }
+    });
+
+    // 초기 로드
+    loadList();
+</script>
+</body>
+</html>

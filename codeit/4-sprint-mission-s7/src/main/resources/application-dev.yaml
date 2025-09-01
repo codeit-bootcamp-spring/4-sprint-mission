@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/discodeit}
+    username: ${DATASOURCE_USERNAME:discodeit_user}
+    password: ${DATASOURCE_PASSWORD:discodeit1234}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${SERVER_PORT:80}
+
+logging:
+  level:
+    app: DEBUG
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
