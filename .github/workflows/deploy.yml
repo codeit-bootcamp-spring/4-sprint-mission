@@ -1,0 +1,106 @@
+name: CD - Deploy to ECS
+
+on:
+  push:
+    branches: ["release"]  # [x] release 브랜치에 코드가 푸시되면 실행되도록 설정하세요.
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:  # [x] Docker 이미지를 빌드하고 푸시하는 Job을 정의하세요.
+    name: Build & Push Docker to Public ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # [x] AWS CLI를 설정하는 Step을 추가하세요.
+      #     Pubilc ECR에 배포해야하므로 리전은 us-east-1으로 설정해야합니다.
+      - name: Configure AWS Credentials for Public ECR (us-east-1)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}  # [x] GitHub 레포지토리 설정을 통해 시크릿을 추가하세요. (AWS_ACCESS_KEY)
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}  # [x] 시크릿 추가 (AWS_SECRET_KEY)
+          aws-region: us-east-1
+
+      # [x] ECR 로그인 Step을 추가하세요. (Public ECR)
+      - name: Login to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # [x] Docker 이미지 빌드 및 푸시하는 과정을 Step으로 추가하세요.
+      #     단, 멀티 플랫폼 옵션은 제외합니다. (ECS와 동일 아키텍처: x86_64)
+      # [x] 이미지 태그는 latest와 GitHub 커밋 해시를 사용하도록 설정하세요.
+      - name: Build & Push (linux/amd64 only)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64  # [x] 멀티 플랫폼 제외, x86_64만
+          tags: |
+            ${{ vars.ECR_REPOSITORY_URI }}:latest        # [x] latest 태그
+            ${{ vars.ECR_REPOSITORY_URI }}:${{ github.sha }}  # [x] 커밋 해시 태그
+
+  deploy:  # [x] ECS 서비스를 업데이트하는 Job을 정의하세요.
+    name: Update ECS Service
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      # [x] AWS CLI를 설정하는 Step을 추가하세요.
+      #     우리의 ECS 클러스터에 접근해야하므로 리전은 AWS_REGION으로 설정해야합니다.
+      - name: Configure AWS Credentials for ECS region
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}   # 예: ap-northeast-2
+
+      # jq는 대부분 포함되어 있지만, 런너 환경에 따라 없을 수 있어 안전하게 설치
+      - name: Ensure jq is installed
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # [x] 태스크 정의를 업데이트하는 Step을 추가하세요.
+      #     기존의 태스크 정의를 기반으로 새 이미지를 사용하도록 업데이트
+      - name: Fetch current task definition
+        env:
+          FAMILY: ${{ vars.ECS_TASK_DEFINITION }}   # 예: discodeit-task
+        run: |
+          aws ecs describe-task-definition --task-definition "$FAMILY" --query 'taskDefinition' > td.json
+
+      - name: Prepare new task definition with new image
+        env:
+          IMAGE_URI: ${{ vars.ECR_REPOSITORY_URI }}:${{ github.sha }}
+        run: |
+          # 컨테이너가 여러 개인 경우 이름으로 찾아 교체하려면 아래 jq를 참조:
+          # jq '(.containerDefinitions[] | select(.name=="app") ).image = env.IMAGE_URI' td.json
+          NEW_TD=$(jq --arg IMAGE "$IMAGE_URI" '
+            .containerDefinitions[0].image = $IMAGE
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+          ' td.json)
+          echo "$NEW_TD" > new-td.json
+          aws ecs register-task-definition --cli-input-json file://new-td.json > reg.out
+          NEW_ARN=$(jq -r '.taskDefinition.taskDefinitionArn' reg.out)
+          echo "NEW_TD_ARN=$NEW_ARN" >> $GITHUB_ENV
+
+      # [x] 프리티어 리소스를 고려해 기존에 구동 중인 서비스를 중단하는 Step
+      #     aws ecs update-service --desired-count 옵션을 활용
+      - name: Scale service to 0 (free tier friendly)
+        run: |
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER }}" --service "${{ vars.ECS_SERVICE }}" --desired-count 0
+          aws ecs wait services-stable --cluster "${{ vars.ECS_CLUSTER }}" --services "${{ vars.ECS_SERVICE }}"
+
+      # [x] 새로 등록한 태스크 정의를 사용하도록 ECS 서비스를 업데이트하는 Step
+      - name: Update service to new task definition and scale up
+        run: |
+          aws ecs update-service \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE }}" \
+            --task-definition "$NEW_TD_ARN" \
+            --desired-count 1
+          aws ecs wait services-stable --cluster "${{ vars.ECS_CLUSTER }}" --services "${{ vars.ECS_SERVICE }}"

@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+out
+node_modules
+*.log
+*.iml
+*.class
+.DS_Store

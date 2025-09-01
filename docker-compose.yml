@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+#  postgres:
+#    image: postgres:15
+#    container_name: discodeit
+#    environment:
+#      POSTGRES_DB: ${POSTGRES_DB}
+#      POSTGRES_USER: ${POSTGRES_USER}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
+#      - ./db/init:/docker-entrypoint-initdb.d  # schema.sql 자동 실행
+#    networks:
+#      - backend
+
+  app:
+    build: .
+    container_name: spring-app
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+    ports:
+      - "8081:80"   # 호스트 8081 → 컨테이너 8080
+    volumes:
+      - app-data:/app/data   # BinaryContentStorage 등 앱 데이터 유지
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  postgres-data:
+  app-data:
