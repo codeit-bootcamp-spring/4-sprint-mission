@@ -15,14 +15,19 @@ import java.util.UUID;
 public interface MessageRepository extends JpaRepository<Message, UUID> {
     List<Message> findAll();
 
+    @EntityGraph(attributePaths = {"attachments", "author"})
     Optional<Message> findById(UUID id);
 
     void delete(Message message);
 
     Message save(Message message);
 
-    @EntityGraph(attributePaths = {"attachments", "author"})
+    @EntityGraph(attributePaths = {"attachments", "author", "author.profile"})
     Page<Message> findAllByChannel_Id(UUID channelId, Pageable pageable);
 
     Optional<Message> findTopByChannelOrderByUpdatedAtDesc(Channel channel);
+
+    Page<Message> findAllByOrderByIdDescCreatedAtDesc(Pageable pageable);
+
+    Page<Message> findByIdLessThanOrderByIdDescCreatedAtDesc(Instant cursor, Pageable pageable);
 }

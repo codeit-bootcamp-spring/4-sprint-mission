@@ -18,4 +18,6 @@ public interface ChannelRepository extends JpaRepository<Channel, UUID> {
     Channel save(Channel channel);
 
     List<Channel> findAllByType(ChannelType type);
+
+    boolean existsByName(String channelName);
 }

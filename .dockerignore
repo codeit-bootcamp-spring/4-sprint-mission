@@ -1,0 +1,10 @@
+/src/test
+.env
+discodeit.env
+/.logs
+/.discodeit
+/logs
+docker-compose.yml
+Dockerfile
+.github
+*.md

@@ -2,7 +2,6 @@ package com.sprint.mission.discodeit.service;
 
 import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.request.UserUpdateRequest;
-import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 
 import java.util.List;
@@ -16,4 +15,8 @@ public interface UserService {
     void deleteUser(UUID userId);
 
     List<User> findAll();
+
+    User findById(UUID userId);
+
+    boolean existsByUsername(String username);
 }

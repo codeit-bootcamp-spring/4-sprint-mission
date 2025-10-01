@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 create table binary_contents
 (
     id           uuid                     default uuid_generate_v4() not null
@@ -22,28 +23,13 @@ create table users
     email      varchar(100)                                        not null
         unique,
     password   varchar(60)                                         not null,
+    role varchar(20) not null,
     profile_id uuid
                                                                    references binary_contents
                                                                        on delete set null
 );
 
 alter table users
-    owner to discodeit_user;
-
-create table user_statuses
-(
-    id             uuid                     default uuid_generate_v4() not null
-        primary key,
-    created_at     timestamp with time zone default CURRENT_TIMESTAMP  not null,
-    updated_at     timestamp with time zone default CURRENT_TIMESTAMP,
-    user_id        uuid                                                not null
-        unique
-        references users
-            on delete cascade,
-    last_active_at timestamp with time zone default CURRENT_TIMESTAMP  not null
-);
-
-alter table user_statuses
     owner to discodeit_user;
 
 create table channels
