@@ -1,87 +1,109 @@
 package com.sprint.mission.discodeit.controller;
-import com.sprint.mission.discodeit.dto.UserService.*;
-import com.sprint.mission.discodeit.dto.UserStatusService.UpdateUserStatusDto;
-import com.sprint.mission.discodeit.dto.UserStatusService.UserStatusResponseDto;
-import com.sprint.mission.discodeit.mapper.UserMapper;
-import com.sprint.mission.discodeit.repository.UserStatusRepository;
+
+import com.sprint.mission.discodeit.controller.api.UserApi;
+import com.sprint.mission.discodeit.dto.data.UserDto;
+import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
+import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
+import com.sprint.mission.discodeit.dto.request.UserUpdateRequest;
+import com.sprint.mission.discodeit.service.AuthService;
 import com.sprint.mission.discodeit.service.UserService;
-import com.sprint.mission.discodeit.service.UserStatusService;
+import jakarta.validation.Valid;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-import java.util.UUID;
-
+@Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/users")
-@RequiredArgsConstructor
-public class UserController {
+public class UserController implements UserApi {
 
-    private final UserService userService;
-    private final UserStatusService userStatusService;
-    private final UserMapper userMapper;
+  private final UserService userService;
+  private final AuthService authService;
 
-    /**
-     * [x] 사용자를 등록할 수 있다.
-     * [x] 사용자 정보를 수정할 수 있다.
-     * [x] 사용자를 삭제할 수 있다.
-     * [x] 모든 사용자를 조회할 수 있다.
-     * [x] 사용자의 온라인 상태를 업데이트할 수 있다.
-     */
+  @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+  @Override
+  public ResponseEntity<UserDto> create(
+      @RequestPart("userCreateRequest") @Valid UserCreateRequest userCreateRequest,
+      @RequestPart(value = "profile", required = false) MultipartFile profile
+  ) {
+    log.info("사용자 생성 요청: {}", userCreateRequest);
+    Optional<BinaryContentCreateRequest> profileRequest = Optional.ofNullable(profile)
+        .flatMap(this::resolveProfileRequest);
+    UserDto createdUser = userService.create(userCreateRequest, profileRequest);
+    log.debug("사용자 생성 응답: {}", createdUser);
+    return ResponseEntity
+        .status(HttpStatus.CREATED)
+        .body(createdUser);
+  }
 
-    @PostMapping // 등록
-    public ResponseEntity<UserResponseDto> createUser(@ModelAttribute UserRequestDto userRequestDto
-    ) {
-        UserResponseDto user = userService.create(userRequestDto);
-        return ResponseEntity.ok().body(user);
+  @PatchMapping(
+      path = "{userId}",
+      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}
+  )
+  @Override
+  public ResponseEntity<UserDto> update(
+      @PathVariable("userId") UUID userId,
+      @RequestPart("userUpdateRequest") @Valid UserUpdateRequest userUpdateRequest,
+      @RequestPart(value = "profile", required = false) MultipartFile profile
+  ) {
+    log.info("사용자 수정 요청: id={}, request={}", userId, userUpdateRequest);
+    Optional<BinaryContentCreateRequest> profileRequest = Optional.ofNullable(profile)
+        .flatMap(this::resolveProfileRequest);
+    UserDto updatedUser = userService.update(userId, userUpdateRequest, profileRequest);
+    log.debug("사용자 수정 응답: {}", updatedUser);
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(updatedUser);
+  }
+
+  @DeleteMapping(path = "{userId}")
+  @Override
+  public ResponseEntity<Void> delete(@PathVariable("userId") UUID userId) {
+    userService.delete(userId);
+    return ResponseEntity
+        .status(HttpStatus.NO_CONTENT)
+        .build();
+  }
+
+  @GetMapping
+  @Override
+  public ResponseEntity<List<UserDto>> findAll() {
+    List<UserDto> users = userService.findAll();
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(users);
+  }
+
+  private Optional<BinaryContentCreateRequest> resolveProfileRequest(MultipartFile profileFile) {
+    if (profileFile.isEmpty()) {
+      return Optional.empty();
+    } else {
+      try {
+        BinaryContentCreateRequest binaryContentCreateRequest = new BinaryContentCreateRequest(
+            profileFile.getOriginalFilename(),
+            profileFile.getContentType(),
+            profileFile.getBytes()
+        );
+        return Optional.of(binaryContentCreateRequest);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
-
-    @PatchMapping ("/{user-id}")// 수정
-    public ResponseEntity<UpdateUserResponseDto> updateUser(@PathVariable("user-id") UUID userId,
-                                                            @RequestBody UpdateUserRequestDto updateUserRequestDto
-        ) {
-        UpdateUserResponseDto updateUserResponseDto = userService.update(userId, updateUserRequestDto);
-        return ResponseEntity.ok(updateUserResponseDto);
-    }
-
-    @DeleteMapping("/{user-id}") // 유저 삭제
-    public ResponseEntity<String> deleteMember(@PathVariable("user-id") UUID userId) {
-        userService.delete(userId);
-        return ResponseEntity.ok().body("Member deleted successfully");
-    }
-
-
-    @PatchMapping("/{user-id}/status") // 유저 상태 업데이트
-    public ResponseEntity<UserStatusResponseDto>  updateUserStatus(@PathVariable("user-id") UUID userId
-    ) {
-        UserStatusResponseDto userStatusResponseDto = userStatusService.updateByUserId(userId);
-        return ResponseEntity.ok(userStatusResponseDto);
-    }
-
-    /**
-     * ==== 심화 ====
-     * [x] 사용자 목록 조회
-     * [x] 요청 - 파라미터, 바디 없음
-     * [x] 응답 - ResponseEntity<List<UserDto>>
-     */
-
-    @GetMapping("/findAll") // 모든 사용자 조회
-    public ResponseEntity<List<UserDto>> getUsers() {
-        UserDtos userDtos = userService.findAll();
-        return ResponseEntity.ok(userMapper.toUserDtoList(userDtos));
-    }
-
-    /**
-     * 심화 부분 적용 전
-     */
-
-//    @GetMapping // 모든 사용자 조회
-//    public ResponseEntity<UserResponseDtos> getUsers() {
-//        UserResponseDtos userResponseDtos = userService.findAll();
-//        return ResponseEntity.ok(userResponseDtos);
-//    }
+  }
 }
