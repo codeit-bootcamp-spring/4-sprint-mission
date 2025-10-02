@@ -1,21 +1,27 @@
 package com.sprint.mission.discodeit.service;
 
-import com.sprint.mission.discodeit.dto.request.UserRequestDto;
-import com.sprint.mission.discodeit.dto.response.UserDto;
-import com.sprint.mission.discodeit.entity.User;
-import org.springframework.web.multipart.MultipartFile;
+import com.sprint.mission.discodeit.dto.data.UserDto;
+import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
+import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
+import com.sprint.mission.discodeit.dto.request.UserUpdateRequest;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface UserService {
-    User create(UserRequestDto.UserCreateRequest request, MultipartFile profile);
+
+    UserDto create(UserCreateRequest userCreateRequest,
+                   Optional<BinaryContentCreateRequest> profileCreateRequest);
 
     UserDto find(UUID userId);
 
     List<UserDto> findAll();
 
-    User update(UUID userId, UserRequestDto.UserUpdateRequest request, MultipartFile newProfile);
+    UserDto update(UUID userId, UserUpdateRequest userUpdateRequest,
+                   Optional<BinaryContentCreateRequest> profileCreateRequest);
 
     void delete(UUID userId);
+
+    void createAdminUserIfNotExists(String username, String email, String password);
 }

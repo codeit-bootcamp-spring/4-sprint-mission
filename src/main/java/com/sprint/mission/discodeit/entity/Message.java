@@ -1,42 +1,48 @@
 package com.sprint.mission.discodeit.entity;
 
-import com.sprint.mission.discodeit.dto.request.MessageRequestDto;
-import com.sprint.mission.discodeit.entity.baseentity.BaseEntity;
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
-import java.io.Serializable;
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
+@Entity
+@Table(name = "messages")
 @Getter
-public class Message extends BaseEntity implements Serializable {
-    private static final long serialVersionUID = 1L;
-    //
-    private String content;
-    //
-    private final UUID channelId;
-    private final UUID authorId;
-    private List<UUID> attachmentIds;
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Message extends BaseUpdatableEntity {
 
-    public Message(String content, UUID channelId, UUID authorId, List<UUID> attachmentIds) {
-        super();
-        //
+    @Column(columnDefinition = "text", nullable = false)
+    private String content;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "channel_id", columnDefinition = "uuid")
+    private Channel channel;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", columnDefinition = "uuid")
+    private User author;
+    @BatchSize(size = 100)
+    @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "message_attachments",
+            joinColumns = @JoinColumn(name = "message_id"),
+            inverseJoinColumns = @JoinColumn(name = "attachment_id")
+    )
+    private List<BinaryContent> attachments = new ArrayList<>();
+
+    public Message(String content, Channel channel, User author, List<BinaryContent> attachments) {
+        this.channel = channel;
         this.content = content;
-        this.channelId = channelId;
-        this.authorId = authorId;
-        this.attachmentIds = attachmentIds;
+        this.author = author;
+        this.attachments = attachments;
     }
 
     public void update(String newContent) {
-        boolean anyValueUpdated = false;
         if (newContent != null && !newContent.equals(this.content)) {
             this.content = newContent;
-            anyValueUpdated = true;
-        }
-
-        if (anyValueUpdated) {
-            super.setUpdatedAt(Instant.now());
         }
     }
 }
