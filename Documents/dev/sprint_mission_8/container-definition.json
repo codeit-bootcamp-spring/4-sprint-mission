@@ -1,0 +1,32 @@
+[
+  {
+    "name": "discodeit-container",
+    "image": "public.ecr.aws/k7o3c3b2/discodeit:latest",
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 8080,
+        "hostPort": 8080,
+        "protocol": "tcp"
+      }
+    ],
+    "environment": [
+      {
+        "name": "SPRING_PROFILES_ACTIVE",
+        "value": "prod"
+      },
+      {
+        "name": "DISCODEIT_STORAGE_TYPE",
+        "value": "s3"
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/discodeit",
+        "awslogs-region": "us-east-1",
+        "awslogs-stream-prefix": "ecs"
+      }
+    }
+  }
+]

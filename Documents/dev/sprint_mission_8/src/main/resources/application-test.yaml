@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: discodeit
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      mode: never
+
+discodeit:
+  storage:
+    type: s3
+    s3:
+      bucket: discodeit-binary-content-storage-mes
+      region: ap-northeast-2
+#    local:
+#      root-path: ./binary-storage
+
+info:
+  app:
+    name: Discodeit
+    version: "test"
+    java: "17"
+    spring-boot: "3.4.0"
+  settings:
+    datasource:
+      url: ${spring.datasource.url}
+      driver: ${spring.datasource.driver-class-name}
+    jpa:
+      hibernate:
+        ddl-auto: ${spring.jpa.hibernate.ddl-auto}
+    storage:
+      type: ${discodeit.storage.type}
+      path: ${discodeit.storage.local.root-path}
+
+logging:
+  level:
+    root: warn
+    com.example.demo: debug

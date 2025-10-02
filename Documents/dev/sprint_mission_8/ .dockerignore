@@ -1,0 +1,20 @@
+# 빌드 결과물
+build/
+out/
+
+# IDE 관련 파일
+.idea/
+*.iml
+
+# Git 관련
+.git
+.gitignore
+
+# 로그 파일
+*.log
+
+# 운영체제 쓰레기 파일
+.DS_Store
+
+# 테스트 리포트
+test-results/
