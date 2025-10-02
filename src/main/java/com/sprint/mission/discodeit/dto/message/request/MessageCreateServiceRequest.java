@@ -1,12 +1,11 @@
 package com.sprint.mission.discodeit.dto.message.request;
 
-import com.sprint.mission.discodeit.entity.BinaryContent;
-import com.sprint.mission.discodeit.entity.Message;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Builder
@@ -19,14 +18,5 @@ public class MessageCreateServiceRequest {
     private final UUID userId;
 
     @Builder.Default
-    private final List<BinaryContent> binaryContents = new ArrayList<>();
-
-    public Message toEntity() {
-        return Message.builder()
-                .content(message)
-                .channelId(channelId)
-                .userId(userId)
-                .binaryContents(binaryContents)
-                .build();
-    }
+    private final List<MultipartFile> attachments = new ArrayList<>();
 }

@@ -1,83 +1,63 @@
 package com.sprint.mission.discodeit.entity;
 
-import com.sprint.mission.discodeit.util.DataExistenceChecker;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import com.sprint.mission.discodeit.constant.ChannelErrorCode;
+import com.sprint.mission.discodeit.exception.ChannelException;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-public class Channel extends BaseEntity {
+@Entity
+@Table(name = "channels")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Channel extends BaseUpdatableEntity {
 
-    private final Set<Message> messages;
-    private final Set<ReadStatus> readStatuses;
-    private final UUID hostId;
+    @Column(name = "name", nullable = true)
+    private String name;
 
-    private String channelName;
+    @Column(name = "description", nullable = true)
     private String description;
 
-    private ChannelType channelType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private ChannelType type;
 
     @Builder
-    private Channel(UUID hostId, String channelName, String description, ChannelType channelType) {
-        this.hostId = hostId;
-        this.channelName = channelName;
-        this.description = description;
-        this.readStatuses= new LinkedHashSet<>();
-        this.messages = new LinkedHashSet<>();
-        this.channelType = channelType;
-    }
-
-    public void addUserReadStatus(ReadStatus readStatus) {
-        if (!DataExistenceChecker.isExistDataInField(readStatuses, readStatus)) {
-            readStatuses.add(readStatus);
+    private Channel(String name, String description, ChannelType type) {
+        if(type == ChannelType.PUBLIC) {
+            this.name = name;
+            this.description = description;
+            this.type = type;
+        } else {
+            validatePrivateChannelDoesNotHaveNameOrDescription(name, description);
+            this.type = type;
         }
-    }
-
-    public void removeUserReadStatus(ReadStatus readStatus) {
-        readStatuses.remove(readStatus);
-    }
-
-    public void addMessage(Message message) {
-        if (!DataExistenceChecker.isExistDataInField(messages, message)) {
-            messages.add(message);
-        }
-    }
-
-    public void removeMessage(Message message) {
-        if(DataExistenceChecker.isExistDataInField(messages, message)) {
-            messages.remove(message);
-        }
-    }
-
-    public List<String> getMessageContents() {
-        return messages.stream().map(Message::getContent).toList();
-    }
-
-    private List<String> getUserIds() {
-        return readStatuses.stream().map(ReadStatus::getUserId).map(UUID::toString).toList();
     }
 
     public void editChannelName(String channelName) {
-        this.channelName = channelName;
+        this.name = channelName;
     }
 
     public void editDescription(String description) {
         this.description = description;
     }
 
-    @Override
-    public String toString() {
-        return "Channel{" +
-                "id=" + id +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                ", channelName='" + channelName + '\'' +
-                ", description='" + description + '\'' +
-                ", messages=" + this.getMessageContents() +
-                ", users=" + this.getUserIds() +
-                '}';
+
+    private void validatePrivateChannelDoesNotHaveNameOrDescription(String name, String description) {
+        if(name != null && description != null) {
+            throw new ChannelException(ChannelErrorCode.PRIVATE_CHANNEL_DOES_NOT_HAVE_NAME_AND_DESCRIPTION);
+        }
+        if(name != null) {
+            throw new ChannelException(ChannelErrorCode.PRIVATE_CHANNEL_DOES_NOT_HAVE_NAME);
+        }
+        if(description!=null) {
+            throw new ChannelException(ChannelErrorCode.PRIVATE_CHANNEL_DOES_NOT_HAVE_DESCRIPTION);
+        }
     }
 }

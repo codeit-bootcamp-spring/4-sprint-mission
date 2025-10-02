@@ -28,6 +28,11 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+.env
+.discoedit/**
+src/main/resources/static/**
+logs/**
+{discodeit.storage.local.root-path}
 
 ### NetBeans ###
 /nbproject/private/

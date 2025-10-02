@@ -1,50 +1,73 @@
 package com.sprint.mission.discodeit.entity;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-public class Message extends BaseEntity{
+@Entity
+@Table(name = "messages")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Message extends BaseUpdatableEntity {
 
+    @Column(name = "content", nullable = false)
     private String content;
 
-    private final UUID channelId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_id", nullable = false)
+    private Channel channel;
 
-    private final UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
 
-    private final List<BinaryContent> binaryContents;
+    @OneToMany(mappedBy = "message", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<MessageAttachment> attachments = new ArrayList<>();
 
     @Builder
-    public Message(String content, UUID channelId, UUID userId, List<BinaryContent> binaryContents) {
+    public Message(String content, Channel channel, User author) {
         this.content = content;
-        this.channelId = channelId;
-        this.userId = userId;
-        this.binaryContents = binaryContents;
+        this.channel = channel;
+        this.author = author;
+    }
+
+    public UUID getAuthorId() {
+        return author.getId();
+    }
+
+    public UUID getChannelId() {
+        return channel.getId();
     }
 
     public void editContent(String content) {
         this.content = content;
     }
 
-    public void addBinaryContent(BinaryContent binaryContent) {
-        this.binaryContents.add(binaryContent);
+    public void addAttachments(List<MessageAttachment> attachments) {
+        this.attachments.addAll(attachments);
     }
 
-    public void removeBinaryContent(BinaryContent binaryContent) {
-        this.binaryContents.remove(binaryContent);
+    public void removeAttachments(List<MessageAttachment> attachments) {
+        this.attachments.removeAll(attachments);
     }
 
-    @Override
-    public String toString() {
-        return "Message{" +
-                "id=" + id +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                ", content='" + content + '\'' +
-                ", userId=" + userId +
-                ", channelId=" + channelId +
-                '}';
+    public void addAttachment(MessageAttachment attachment) {
+        this.attachments.add(attachment);
+    }
+
+    public void removeAttachment(MessageAttachment attachment) {
+        this.attachments.remove(attachment);
     }
 }

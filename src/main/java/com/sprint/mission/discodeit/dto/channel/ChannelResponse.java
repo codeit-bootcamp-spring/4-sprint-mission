@@ -1,41 +1,23 @@
 package com.sprint.mission.discodeit.dto.channel;
 
 
-import com.sprint.mission.discodeit.dto.message.MessageResponse;
-import com.sprint.mission.discodeit.entity.Channel;
-import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.dto.user.UserResponse;
+import com.sprint.mission.discodeit.entity.ChannelType;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
+@AllArgsConstructor
 public class ChannelResponse {
-    protected final List<MessageResponse> messages;
-    protected final List<UUID> users;
-    protected final UUID id;
-    protected final Instant createdAt;
-    protected final Instant lastMessageAt;
-
-    protected ChannelResponse(Channel channel) {
-        this.id = channel.getId();
-        this.createdAt = channel.getCreatedAt();
-        this.lastMessageAt = getLastMessageAt(channel.getMessages());
-        this.messages = toMessageResponses(channel.getMessages());
-        this.users = toUserIds(channel.getReadStatuses());
-    }
-
-    protected static List<MessageResponse> toMessageResponses(Set<Message> messages) {
-        return messages.stream().map(MessageResponse::new).toList();
-    }
-
-    protected static List<UUID> toUserIds(Set<ReadStatus> readStatuses) {
-        return readStatuses.stream().map(ReadStatus::getUserId).toList();
-    }
-
-    protected static Instant getLastMessageAt(Set<Message> messages) {
-        return messages.stream().map(Message::getCreatedAt).max(Instant::compareTo).orElse(null);
-    }
+    private final UUID id;
+    private final ChannelType type;
+    private String name;
+    private String description;
+    private final List<UserResponse> participants;
+    private final Instant lastMessageAt;
 }

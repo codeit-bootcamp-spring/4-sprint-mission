@@ -1,73 +1,40 @@
 package com.sprint.mission.discodeit.dto.user;
 
-import com.sprint.mission.discodeit.dto.message.MessageResponse;
-import com.sprint.mission.discodeit.entity.ActiveStatus;
-import com.sprint.mission.discodeit.entity.BaseEntity;
-import com.sprint.mission.discodeit.entity.Message;
-import com.sprint.mission.discodeit.entity.ReadStatus;
+import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
+import com.sprint.mission.discodeit.entity.Role;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.entity.UserStatus;
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class UserResponse {
 
-    private final List<MessageResponse> messages;
-    private final List<String> channels;
-    private final UUID id;
-    private final Instant createdAt;
-    private final Instant updatedAt;
-    private final String userName;
-    private final String email;
-    private final String phoneNumber;
-    private final ActiveStatus activeStatus;
-    private final UserStatus userStatus;
-    private final UUID profileId;
+    private UUID id;
+    private String username;
+    private String email;
+    private BinaryContentResponse profile;
+    private boolean online;
+    private Role role;
 
-    public UserResponse(User user, UserStatus userStatus) {
+    public UserResponse(User user) {
         this.id = user.getId();
-        this.createdAt = user.getCreatedAt();
-        this.updatedAt = user.getUpdatedAt();
-        this.messages = toMessageResponses(user.getMessages());
-        this.channels = toChannelIds(user.getReadStatuses());
-        this.userName = user.getUserName();
+        this.username = user.getUsername();
         this.email = user.getEmail();
-        this.phoneNumber = user.getPhoneNumber();
-        this.activeStatus = user.getActiveStatus();
-        this.userStatus = userStatus;
-        this.profileId = user.getOptionalProfile()
-                .map(BaseEntity::getId)
-                .orElse(null);
+        assignBinaryContentResponseIfUserProfilePresent(user);
+        this.role = user.getRole();
     }
 
-    private static List<MessageResponse> toMessageResponses(Set<Message> messages) {
-        return messages.stream().map(MessageResponse::new).toList();
+    private void assignBinaryContentResponseIfUserProfilePresent(User user) {
+        user.getOptionalProfile().ifPresent(binaryContent -> this.profile = new BinaryContentResponse(binaryContent));
     }
 
-    private static List<String> toChannelIds(Set<ReadStatus> readStatuses) {
-        return readStatuses.stream()
-                .map(ReadStatus::getChannelId)
-                .map(UUID::toString)
-                .toList();
-    }
-
-    @Override
-    public String toString() {
-        return "UserResponse{" +
-                "activeStatus=" + activeStatus +
-                ", messages=" + messages +
-                ", channels=" + channels +
-                ", id=" + id +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                ", userName='" + userName + '\'' +
-                ", email='" + email + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", userStatus=" + userStatus +
-                '}';
+    public void isOnline(boolean online) {
+        this.online = online;
     }
 }
