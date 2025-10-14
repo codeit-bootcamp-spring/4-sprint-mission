@@ -1,0 +1,29 @@
+# Git folder and history
+.git
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Build artifacts (if not needed)
+target/
+build/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+*.md
+
+# CI/CD files
+.github/
+
+# Large/unnecessary files
+*.ser
+*.dump
+*.log
