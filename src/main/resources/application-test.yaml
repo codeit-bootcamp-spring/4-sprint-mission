@@ -1,0 +1,41 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: discodeit
+  h2:
+    console:
+      enabled: true
+      path: /h2
+  servlet:
+    multipart:
+      maxFileSize: 10MB # 파일 하나의 최대 크기
+      maxRequestSize: 30MB  # 한 번에 최대 업로드 가능 용량
+  datasource:
+    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+    #        default_batch_fetch_size: 100
+    open-in-view: false
+  sql:
+    init:
+      mode: never
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: debug
+
+discodeit:
+  storage:
+    s3:
+      access-key: access-key
+      secret-key: secret-key
+      region: region
+      bucket: bucket

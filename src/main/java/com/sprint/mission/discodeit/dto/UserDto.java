@@ -1,5 +1,6 @@
 package com.sprint.mission.discodeit.dto;
 
+import com.sprint.mission.discodeit.entity.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
@@ -15,7 +16,9 @@ public record UserDto(
         @Schema(description = "유저 프로필 이미지 ID")
         BinaryContentDto profile,
         @Schema(description = "온라인 상태", example = "true")
-        Boolean online
+        Boolean online,
+        @Schema(description = "유저 권한", example = "USER")
+        Role role
 ) {
 }
 

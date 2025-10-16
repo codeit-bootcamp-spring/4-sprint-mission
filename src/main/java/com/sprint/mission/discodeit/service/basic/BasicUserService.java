@@ -2,36 +2,46 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.request.UserUpdateRequest;
-import com.sprint.mission.discodeit.entity.*;
-import com.sprint.mission.discodeit.exception.BusinessLogicException;
-import com.sprint.mission.discodeit.exception.ExceptionCode;
-import com.sprint.mission.discodeit.repository.*;
+import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.binary_content.BinaryContentNotFoundException;
+import com.sprint.mission.discodeit.exception.user.UserAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.repository.BinaryContentRepository;
+import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class BasicUserService implements UserService {
     private final UserRepository userRepository;
     private final BinaryContentRepository binaryContentRepository;
-    private final UserStatusRepository userStatusRepository;
+    private final PasswordEncoder passwordEncoder;
+
     @Autowired(required = false)
     private BinaryContentStorage binaryContentStorage;
 
     @Transactional
     @Override
     public User createUser(UserCreateRequest userCreateRequest, UUID profileId) {
-        isDuplicateEmail(userCreateRequest.email());
-        isDuplicateName(userCreateRequest.username());
+        log.debug("유저 생성 호출");
+        validateEmail(userCreateRequest.email());
+        validateUsername(userCreateRequest.username());
 
         if (profileId == null) {
             System.out.println("이미지가 포함되지 않아 기본 프로필로 설정됩니다.");
@@ -39,8 +49,10 @@ public class BasicUserService implements UserService {
         BinaryContent profile = Optional.ofNullable(profileId)
                 .flatMap(binaryContentRepository::findById)
                 .orElse(null);
-        User user = new User(userCreateRequest.username(), userCreateRequest.password(), userCreateRequest.email(), profile);
+        String password = passwordEncoder.encode(userCreateRequest.password());
+        User user = new User(userCreateRequest.username(), password, userCreateRequest.email(), profile);
         userRepository.save(user);
+        log.info("유저 생성 완료 id = {}", user.getId());
         return user;
     }
 
@@ -51,40 +63,45 @@ public class BasicUserService implements UserService {
     }
 
     @Transactional
+    @PreAuthorize("#userId == authentication.principal.userDto.id")
     @Override
     public User updateUser(UUID userId, UserUpdateRequest userUpdateRequest, UUID newProfileId) {
-        User findUser = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("<UNK> <UNK> <UNK> <UNK> <UNK> <UNK>."));
+        log.debug("유저 수정 호출");
+        User findUser = getValidUser(userId);
 
-        isDuplicateName(userUpdateRequest.newUsername());
-        isDuplicateEmail(userUpdateRequest.newEmail());
+        validateUpdateName(findUser.getUsername(), userUpdateRequest.newUsername());
+        validateUpdateEmail(findUser.getEmail(), userUpdateRequest.newEmail());
 
         Optional.ofNullable(userUpdateRequest.newUsername())  // username 업데이트
                 .ifPresent(findUser::setUsername);
         Optional.ofNullable(userUpdateRequest.newPassword())  // password 업데이트
-                .ifPresent(findUser::setPassword);
+                .ifPresent(password -> {
+                    String encodePassword = passwordEncoder.encode(password);
+                    findUser.setPassword(encodePassword);
+                });
         Optional.ofNullable(userUpdateRequest.newEmail())  // email 업데이트
                 .ifPresent(findUser::setEmail);
         Optional.ofNullable(newProfileId).ifPresent(binaryContentId -> {  // 변경할 프로필이 있으면 삭제 후 등록
             Optional.ofNullable(findUser.getProfile()).ifPresent(binaryContentRepository::delete);
             BinaryContent binaryContent = binaryContentRepository.findById(newProfileId)
-                    .orElseThrow(() -> new BusinessLogicException(ExceptionCode.BINARY_CONTENT_NOT_FOUND));
+                    .orElseThrow(() -> {
+                        log.warn("프로필 이미지를 찾을 수 없음 id = {}", newProfileId);
+                        throw new BinaryContentNotFoundException(ErrorCode.BINARY_CONTENT_NOT_FOUND, Map.of("newProfileId", newProfileId));
+                    });
             binaryContentRepository.save(binaryContent);
             findUser.setProfile(binaryContent);
         });
-        UserStatus userStatus = userStatusRepository.findByUserId(findUser.getId());
-        userStatus.update(Instant.now());
         userRepository.save(findUser);
-        userStatusRepository.save(userStatus);
-
+        log.info("유저 수정 완료 id = {}", findUser.getId());
         return findUser;
     }
 
     @Transactional
     @Override
+    @PreAuthorize("#userId == authentication.principal.userDto.id")
     public void deleteUser(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.USER_NOT_FOUND));
-        validateActiveUser(user);
+        log.debug("유저 삭제 호출 id = {}", userId);
+        User user = getValidUser(userId);
 
         // 프로필 이미지가 있는 경우에만 제거한다.
         if (user.getProfile() != null) {
@@ -94,22 +111,67 @@ public class BasicUserService implements UserService {
 
         userRepository.delete(user);
 
-        userStatusRepository.deleteByUserId(user.getId());
+        log.info("유저 삭제 완료 id = {}", userId);
     }
 
-    private void validateActiveUser(User user) {
-        if (!userRepository.existsById(user.getId())) throw new BusinessLogicException(ExceptionCode.USER_NOT_FOUND);
+    @Override
+    public User findById(UUID userId) {
+        return getValidUser(userId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    @Override
+    public User findByEmail(String email) {
+        return getValidUser(email);
+    }
+
+    private User getValidUser(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(() -> {
+            log.warn("해당 유저를 찾을 수 없음 id = {}", userId);
+            throw new UserNotFoundException(ErrorCode.USER_NOT_FOUND, Map.of("userId", userId));
+        });
+    }
+
+    private User getValidUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.warn("해당 유저를 찾을 수 없음 email = {}", email);
+                    throw new UserNotFoundException(ErrorCode.USER_NOT_FOUND, Map.of("email", email));
+                });
     }
 
     // 동일한 이메일이 존재하는지 확인
-    private void isDuplicateEmail(String email) {
-        if (userRepository.existsByEmail(email))
-            throw new BusinessLogicException(ExceptionCode.EMAIL_OR_USERNAME_ALREADY_EXISTS);
+    private void validateUpdateEmail(String oldEmail, String newEmail) {
+        if (userRepository.existsByEmail(newEmail) && !oldEmail.equals(newEmail)) {
+            log.warn("이메일 검증 실패 , 해당 이메일은 이미 존재합니다. email = {}", newEmail);
+            throw new UserAlreadyExistsException(ErrorCode.EMAIL_OR_USERNAME_ALREADY_EXISTS, Map.of("email", newEmail));
+        }
     }
 
-    private void isDuplicateName(String name) {
-        if (userRepository.existsByUsername(name))
-            throw new BusinessLogicException(ExceptionCode.EMAIL_OR_USERNAME_ALREADY_EXISTS);
+    private void validateUpdateName(String oldName, String newName) {
+        if (userRepository.existsByUsername(newName) && !oldName.equals(newName)) {
+            log.warn("이름 검증 실패 name , 해당 username은 이미 존재합니다 = {}", newName);
+            throw new UserAlreadyExistsException(ErrorCode.EMAIL_OR_USERNAME_ALREADY_EXISTS, Map.of("name", newName));
+        }
 
+    }
+
+    private void validateEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
+            log.warn("이메일 검증 실패, 해당 이메일은 이미 존재합니다. email = {}", email);
+            throw new UserAlreadyExistsException(ErrorCode.EMAIL_OR_USERNAME_ALREADY_EXISTS, Map.of("email", email));
+        }
+    }
+
+    private void validateUsername(String username) {
+        if (userRepository.existsByUsername(username)) {
+            log.warn("이름 검증 실패, 해당 username은 이미 존재합니다. username = {}", username);
+            throw new UserAlreadyExistsException(ErrorCode.EMAIL_OR_USERNAME_ALREADY_EXISTS, Map.of("username", username));
+        }
     }
 }

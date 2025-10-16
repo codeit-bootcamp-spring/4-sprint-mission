@@ -1,0 +1,101 @@
+on:
+  push:
+    branches:
+      - release
+env:
+  ECR_REPOSITORY_NAME: public.ecr.aws/h3g7d6d9
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # 1) 소스 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # 2) AWS 자격 증명 설정 (Secrets 사용)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # 3) ECR 로그인 (계정 ID를 Secret에서 참조)
+      - name: ECR Login
+        run: |
+          aws ecr get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin ${{env.ECR_REPOSITORY_NAME}}
+
+      # 5) 이미지 태그 구성
+      - name: Prepare tags
+        id: prep
+        run: |
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Docker 이미지 빌드 및 푸시 태그:커밋해시
+        id: build-image
+        run: |
+          docker buildx build \
+          -t "${{vars.ECR_REPOSITORY_URI}}:latest" \
+          -t "${{vars.ECR_REPOSITORY_URI}}:$IMAGE_TAG" \
+          --push .
+
+      # 9) 작업 정의 템플릿 렌더링
+      - name: Render task definition
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y gettext-base
+          export IMAGE_TAG=${{ env.IMAGE_TAG }}
+          envsubst < ecs-task-def.json > task-def.rendered.json
+          echo "=== Rendered task def ==="
+          cat task-def.rendered.json
+
+      # 🔧 10) jq 설치 (JSON 파싱용)
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      # ✅ 11) 작업 정의 등록 & ARN 추출
+      - name: Register task definition and extract ARN
+        id: register_task
+        run: |
+          REVISION_JSON=$(aws ecs register-task-definition \
+            --cli-input-json file://task-def.rendered.json)
+          TASK_DEF_ARN=$(echo $REVISION_JSON | jq -r '.taskDefinition.taskDefinitionArn')
+          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+      - name: ECS 서비스 중단
+        run: |
+          aws ecs update-service \
+          --cluster ${{vars.ECS_CLUSTER}} \
+          --service ${{vars.ECS_SERVICE}} \
+          --desired-count 0
+          aws ecs wait services-stable \
+          --cluster ${{vars.ECS_CLUSTER}} \
+          --service ${{vars.ECS_SERVICE}}
+
+      # ✅ 12) ECS 서비스 업데이트 (정확한 리비전 사용)
+      - name: ECS 서비스 업데이트
+        run: |
+          aws ecs update-service \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --service ${{ vars.ECS_SERVICE }} \
+            --task-definition $TASK_DEF_ARN \
+            --desired-count 1 \
+            --force-new-deployment
+
+      # 13) 배포 완료 대기
+      - name: ECS 배포 완료 대기
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --services ${{ vars.ECS_SERVICE }}
+
+      # 14) 배포 상태 확인
+      - name: ECS 배포 상태 확인
+        run: |
+          aws ecs describe-services \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --services ${{ vars.ECS_SERVICE }} \
+            --query "services[0].deployments"

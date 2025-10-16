@@ -39,6 +39,11 @@ public class Message extends BaseUpdatableEntity {
         this.author = author;
     }
 
+    private Message(UUID id, Channel channel, User author, String content) {
+        this(content, channel, author);
+        setId(id);
+    }
+
     @Override
     public String toString() {
         return "Message{" +
@@ -59,8 +64,11 @@ public class Message extends BaseUpdatableEntity {
         return channel.getId();
     }
 
-
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public static Message of(UUID id, Channel channel, User author, String content) {
+        return new Message(id, channel, author, content);
     }
 }

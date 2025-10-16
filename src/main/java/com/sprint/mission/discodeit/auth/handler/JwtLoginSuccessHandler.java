@@ -1,0 +1,70 @@
+package com.sprint.mission.discodeit.auth.handler;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.mission.discodeit.auth.DiscodeitUserDetails;
+import com.sprint.mission.discodeit.auth.provider.JwtTokenProvider;
+import com.sprint.mission.discodeit.auth.registry.JwtInformation;
+import com.sprint.mission.discodeit.auth.registry.JwtRegistry;
+import com.sprint.mission.discodeit.dto.JwtDto;
+import com.sprint.mission.discodeit.dto.UserDto;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
+    private final JwtTokenProvider jwtTokenProvider;
+    private final ObjectMapper objectMapper;
+    private final JwtRegistry jwtRegistry;
+
+    @Value("${jwt.refresh-token-expiration-minutes}")
+    private int expiration;
+
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException, ServletException {
+        log.info("로그인 성공 username = {}", authentication.getName());
+        DiscodeitUserDetails userDetails = (DiscodeitUserDetails) authentication.getPrincipal();
+        UserDto userDto = userDetails.getUserDto();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", userDto.role());
+        claims.put("username", userDto.username());
+        String subject = userDto.email();
+        String accessToken = jwtTokenProvider.generateAccessToken(claims, subject);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(subject);
+
+        JwtInformation jwtInformation = new JwtInformation(userDto, accessToken, refreshToken);
+        if (jwtRegistry.hasActiveJwtInformationByUserId(userDto.id())) {
+            log.info("중복 로그인 감지 username = {}", userDto.username());
+            jwtRegistry.invalidateJwtInformationByUserId(userDto.id());
+        }
+        jwtRegistry.registerJwtInformation(jwtInformation);
+        // accessToken 응답Body
+        JwtDto jwtDto = new JwtDto(userDto, accessToken);
+
+        // RefreshToken Cookie
+        Cookie refreshTokenCookie = new Cookie("REFRESH_TOKEN", refreshToken);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(expiration * 60);
+        response.addCookie(refreshTokenCookie);
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getWriter(), jwtDto);
+    }
+}
