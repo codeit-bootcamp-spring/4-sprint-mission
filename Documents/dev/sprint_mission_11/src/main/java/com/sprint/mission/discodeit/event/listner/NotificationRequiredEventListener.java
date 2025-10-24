@@ -6,6 +6,7 @@ import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.event.MessageCreatedEvent;
 import com.sprint.mission.discodeit.event.RoleUpdatedEvent;
+import com.sprint.mission.discodeit.event.S3UploadFailedEvent;
 import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
 import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
@@ -61,6 +62,27 @@ public class NotificationRequiredEventListener {
                 String.format("%s → %s",
                         event.previousRole(),
                         event.newRole())
+        );
+        notificationRepository.save(notification);
+    }
+
+    @Async
+    @TransactionalEventListener
+    public void on(S3UploadFailedEvent event) {
+        String content = String.format("""
+                S3 파일 업로드 실패
+                RequestId: %s
+                BinaryContentId: %s
+                Error: %s
+                """, event.requestId(), event.binaryContentId(), event.errorMessage());
+
+        User admin = userRepository.findByEmail(("admin@gmail.com"))
+                .orElseThrow(()-> new UserNotFoundException());
+
+        Notification notification = new Notification(
+            admin.getId(),
+                "시스템 알림",
+                content
         );
         notificationRepository.save(notification);
     }

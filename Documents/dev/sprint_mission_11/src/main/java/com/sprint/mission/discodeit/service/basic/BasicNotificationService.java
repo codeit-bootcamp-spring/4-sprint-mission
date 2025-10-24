@@ -9,6 +9,8 @@ import com.sprint.mission.discodeit.repository.NotificationRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,7 @@ public class BasicNotificationService implements NotificationService {
     private final NotificationMapper notificationMapper;
 
     @Override
+    @Cacheable(value = "notifications", key = "#userId")
     public List<NotificationDto> findAllByReceiverId(UUID userId) {
         User receiver = userRepository.findById(userId).orElseThrow(()-> new UserNotFoundException().withId(userId));
         List<Notification> notifications = notificationRepository.findAllByReceiverId(receiver.getId());
@@ -31,6 +34,7 @@ public class BasicNotificationService implements NotificationService {
     }
 
     @Override
+    @CacheEvict(value = "notifications", allEntries = true)
     public void deleteByIdAndReceiverId(UUID id, UUID receiverId) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(()->new RuntimeException("알림이 없습니다."));
