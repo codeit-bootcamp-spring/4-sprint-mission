@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.service;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
+import com.sprint.mission.discodeit.entity.BinaryContentStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -14,4 +15,6 @@ public interface BinaryContentService {
     List<BinaryContent> findAllByIdIn(List<UUID> ids);
 
     void delete(UUID id);
+
+    BinaryContent updateStatus(UUID binaryContentId, BinaryContentStatus status);
 }

@@ -13,6 +13,7 @@ public record ReadStatusDto(
         @Schema(description = "채널 ID", format = "uuid")
         UUID channelId,
         @Schema(description = "메시지를 읽은 최근 시간", format = "date-time")
-        Instant lastReadAt
+        Instant lastReadAt,
+        boolean notificationEnabled
 ) {
 }

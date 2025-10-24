@@ -18,4 +18,6 @@ public interface MessageService {
     Message updateMessage(UUID messageId, MessageUpdateRequest messageUpdateRequest);
 
     void removeMessage(UUID messageId);
+
+    UUID findUserIdByMessageId(UUID messageId);
 }

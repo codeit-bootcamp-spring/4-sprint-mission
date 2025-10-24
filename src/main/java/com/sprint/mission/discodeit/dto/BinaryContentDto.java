@@ -1,5 +1,6 @@
 package com.sprint.mission.discodeit.dto;
 
+import com.sprint.mission.discodeit.entity.BinaryContentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
@@ -13,6 +14,8 @@ public record BinaryContentDto(
         @Schema(description = "첨부파일 이름", example = "file1")
         String filename,
         @Schema(description = "첨부파일 종류", example = "image/jpeg")
-        String contentType
+        String contentType,
+        @Schema(description = "첨부파일 상태", allowableValues = {"SUCCESS", "FAIL", "PROCESSING"})
+        BinaryContentStatus status
 ) {
 }
