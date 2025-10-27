@@ -11,9 +11,8 @@ public class UserUpdateServiceRequest {
 
     private final UUID userId;
 
-    private final String userName;
-    private final String email;
-    private final String phoneNumber;
-    private final String password;
+    private final String newUsername;
+    private final String newEmail;
+    private final String newPassword;
     private final MultipartFile profile;
 }

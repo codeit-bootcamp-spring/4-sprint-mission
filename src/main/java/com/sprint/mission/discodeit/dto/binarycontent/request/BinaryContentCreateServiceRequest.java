@@ -1,7 +1,6 @@
 package com.sprint.mission.discodeit.dto.binarycontent.request;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
-import com.sprint.mission.discodeit.entity.FileType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,14 +9,14 @@ import lombok.Getter;
 public class BinaryContentCreateServiceRequest {
 
     String fileName;
-    String fileType;
-    byte[] data;
+    String contentType;
+    byte[] bytes;
 
-    public BinaryContent toEntity(FileType fileType) {
+    public BinaryContent toEntity() {
         return BinaryContent.builder()
                 .fileName(fileName)
-                .fileType(fileType)
-                .data(data)
+                .contentType(contentType)
+                .bytes(bytes)
                 .build();
     }
 }

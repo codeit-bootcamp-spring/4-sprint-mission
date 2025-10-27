@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: discodeit
+  boot:
+    admin:
+      client:
+        url: http://localhost:9090
+        instance:
+          service-base-url: http://localhost:80
+  datasource:
+    url: jdbc:postgresql://localhost:5432/discodeit
+    username: discodeit_user
+    password: discode1234
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+jwt:
+  secret: "85u092j4aa023jfk320fawjoi3thta0hataljnvh289ht4thafhkwghkfgg2ita4thjlfhi2u3falbtbgiuy"
+  access-token-expiration: 3600 # 1시간
+  refresh-token-expiration: 172800 # 1일
+  max-active-count: 1
+
+logging:
+  level:
+    com:
+      sprint:
+        mission:
+          discodeit: DEBUG
+    org:
+      hibernate:
+        SQL: DEBUG
+        orm:
+          jdbc:
+            bind: TRACE
+      springframework:
+        security: TRACE
+
+

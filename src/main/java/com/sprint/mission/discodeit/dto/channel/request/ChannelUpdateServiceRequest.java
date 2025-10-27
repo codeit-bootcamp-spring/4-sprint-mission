@@ -9,7 +9,7 @@ import lombok.Getter;
 public class ChannelUpdateServiceRequest {
 
     private final UUID   channelId;
-    private final String channelName;
+    private final String name;
     private final String description;
 
 }

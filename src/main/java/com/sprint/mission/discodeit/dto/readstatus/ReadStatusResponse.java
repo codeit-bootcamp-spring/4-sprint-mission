@@ -3,9 +3,13 @@ package com.sprint.mission.discodeit.dto.readstatus;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
+@AllArgsConstructor
 public class ReadStatusResponse {
 
     private final UUID id;
@@ -20,13 +24,4 @@ public class ReadStatusResponse {
         this.lastReadAt = readStatus.getLastReadAt();
     }
 
-    @Override
-    public String toString() {
-        return "ReadStatusResponse{" +
-                "channelId=" + channelId +
-                ", id=" + id +
-                ", userId=" + userId +
-                ", lastReadAt=" + lastReadAt +
-                '}';
-    }
 }

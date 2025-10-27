@@ -1,158 +1,184 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.constant.BinaryContentErrorCode;
+import com.sprint.mission.discodeit.constant.ChannelErrorCode;
+import com.sprint.mission.discodeit.constant.MessageErrorCode;
+import com.sprint.mission.discodeit.constant.UserErrorCode;
+import com.sprint.mission.discodeit.dto.PageResponse;
 import com.sprint.mission.discodeit.dto.message.MessageResponse;
 import com.sprint.mission.discodeit.dto.message.request.MessageCreateServiceRequest;
 import com.sprint.mission.discodeit.dto.message.request.MessageUpdateServiceRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.entity.MessageAttachment;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.BinaryContentException;
+import com.sprint.mission.discodeit.exception.ChannelException;
+import com.sprint.mission.discodeit.exception.MessageException;
+import com.sprint.mission.discodeit.exception.UserException;
+import com.sprint.mission.discodeit.mapper.MessageMapper;
+import com.sprint.mission.discodeit.mapper.PageResponseMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import com.sprint.mission.discodeit.repository.MessageAttachmentRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
+import com.sprint.mission.discodeit.util.BinaryContentConverter;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-@Service
+@Service("messageService")
+@Slf4j
 @RequiredArgsConstructor
 public class BasicMessageService implements MessageService {
 
-    @Qualifier("fileMessageRepository")
     private final MessageRepository messageRepository;
-
-    @Qualifier("fileChannelRepository")
     private final ChannelRepository channelRepository;
-
-    @Qualifier("fileUserRepository")
     private final UserRepository userRepository;
-
-    @Qualifier("fileBinaryContentRepository")
     private final BinaryContentRepository binaryContentRepository;
+    private final MessageAttachmentRepository messageAttachmentRepository;
+
+    private final BinaryContentStorage binaryContentStorage;
+
+    private final MessageMapper messageMapper;
+    private final PageResponseMapper pageResponseMapper;
 
     @Override
+    @Transactional
     public MessageResponse createMessage(MessageCreateServiceRequest request) {
-        Message message = request.toEntity();
 
-        Channel findChannel = channelRepository.findChannelById(request.getChannelId())
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found."));
+        User author = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        User findUser = userRepository.findUserById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        Channel findChannel = channelRepository.findById(request.getChannelId())
+                .orElseThrow(() -> new ChannelException(ChannelErrorCode.CHANNEL_NOT_FOUND));
 
-        findChannel.addMessage(message);
-        findUser.addMessage(message);
+        Message message = messageMapper.toEntity(request, author, findChannel);
 
-        channelRepository.save(findChannel);
-        userRepository.save(findUser);
+        log.info("message to create - content={}", message.getContent());
+
+        List<MessageAttachment> attachments = new ArrayList<>();
+
+        List<MultipartFile> multipartFiles = Optional.ofNullable(request.getAttachments()).orElse(new ArrayList<>());
+
+        List<BinaryContent> binaryContents = convertMultipartFilesToBinaryContents(multipartFiles);
+
+        binaryContentRepository.saveAll(binaryContents);
+
+        binaryContents.stream()
+                        .forEach(binaryContent -> {
+                            binaryContentStorage.put(binaryContent.getId(), binaryContent.getBytes());
+                        });
+
+        attachments = convertBinaryContentsToMessageAttachment(binaryContents, message);
+
+        message.addAttachments(attachments);
+
         messageRepository.save(message);
-        return new MessageResponse(message);
+        log.info("message created sucessfully - id={}", message.getId());
+        return messageMapper.toResponse(message);
     }
 
-    private void addBinaryContentsToMessage(List<BinaryContent> binaryContents) {
-        if(!binaryContents.isEmpty()) {
-            for (BinaryContent content : binaryContents) {
-                binaryContentRepository.save(content);
-            }
+    private BinaryContent getBinaryContentFromMultipartFile(MultipartFile profile) {
+        BinaryContent binaryContent;
+        try {
+            binaryContent = BinaryContentConverter.toBinaryContent(profile);
+        } catch(IOException e) {
+            throw new BinaryContentException(BinaryContentErrorCode.MULTIPART_FILE_CONVERT_FAILED);
         }
+        return binaryContent;
+    }
+
+    private List<BinaryContent> convertMultipartFilesToBinaryContents(List<MultipartFile> multipartFiles) {
+        return multipartFiles.stream()
+                .map(this::getBinaryContentFromMultipartFile)
+                .toList();
+    }
+
+    private List<MessageAttachment> convertBinaryContentsToMessageAttachment(List<BinaryContent> binaryContents, Message message) {
+        return binaryContents.stream()
+                .map(binaryContent ->
+                        MessageAttachment.builder()
+                                .binaryContent(binaryContent)
+                                .message(message)
+                                .build())
+                .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MessageResponse findMessageById(UUID messageId) {
-        Message findMessage = messageRepository.findMessageById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found."));
+        Message findMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new MessageException(MessageErrorCode.MESSAGE_NOT_FOUND));
 
-        return new MessageResponse(findMessage);
+        return messageMapper.toResponse(findMessage);
     }
 
     @Override
-    public List<MessageResponse> findMessagesByChannelId(UUID channelId) {
-        return messageRepository.findMessages()
-                .stream()
-                .filter(message -> message.getChannelId().equals(channelId))
-                .map(MessageResponse::new)
-                .toList();
+    @Transactional(readOnly = true)
+    public PageResponse<MessageResponse> findMessagesByChannelId(UUID channelId, Instant cursor, Pageable pageable) {
+        Slice<MessageResponse> messages = messageRepository.findChannelMessagesByCursor(channelId, Optional.ofNullable(cursor).orElse(Instant.now()), pageable)
+                .map(messageMapper::toResponse);
+
+        Instant nextCursor = null;
+
+        if(!messages.getContent().isEmpty()) {
+            nextCursor = messages.getContent().get(messages.getContent().size() - 1).getCreatedAt();
+        }
+
+        return pageResponseMapper.toPageResponse(messages, nextCursor);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MessageResponse> findMessagesByUserId(UUID userId) {
-        return messageRepository.findMessages()
+        return messageRepository.findAll()
                 .stream()
-                .filter(message -> message.getUserId().equals(userId))
-                .map(MessageResponse::new)
+                .filter(message -> message.getAuthorId().equals(userId))
+                .map(messageMapper::toResponse)
                 .toList();
     }
 
     @Override
+    @Transactional
     public MessageResponse updateContent(MessageUpdateServiceRequest request) {
-        Optional.ofNullable(request.getContent()).orElseThrow(() -> new IllegalArgumentException("Content is null."));
+        Optional.ofNullable(request.getContent()).orElseThrow(() -> new MessageException(MessageErrorCode.UPDATE_CONTENT_IS_NULL));
 
-        Message messageToUpdate = messageRepository.findMessageById(request.getMessageId())
-               .orElseThrow(() -> new IllegalArgumentException("Message not found."));
+        Message messageToUpdate = messageRepository.findById(request.getMessageId())
+               .orElseThrow(() -> new MessageException(MessageErrorCode.MESSAGE_NOT_FOUND));
 
-        User author = userRepository.findUserById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
-
-        Channel channel = channelRepository.findChannelById(request.getChannelId())
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found."));
-
-
-        editUserMessageContent(author, request);
-        editChannelMessageContent(channel, request);
-
+        log.info("message to update - content={}", messageToUpdate.getContent());
         messageToUpdate.editContent(request.getContent());
 
-        channelRepository.save(channel);
-        userRepository.save(author);
         messageRepository.save(messageToUpdate);
 
-        return new MessageResponse(messageToUpdate);
-    }
-
-    private void editUserMessageContent(User author, MessageUpdateServiceRequest request) {
-        author.getMessages().stream()
-                .filter(myMessage -> myMessage.getId().equals(request.getMessageId()))
-                .findFirst()
-                .ifPresentOrElse(myMessage -> myMessage.editContent(request.getContent()),
-                        () -> {throw new IllegalArgumentException("Message not found.");}
-                );
-    }
-
-    public void editChannelMessageContent(Channel channel, MessageUpdateServiceRequest request) {
-        channel.getMessages().stream()
-                .filter(channelMessage -> channelMessage.getId().equals(request.getMessageId()))
-                .findFirst()
-                .ifPresentOrElse(channelMessage -> channelMessage.editContent(request.getContent()),
-                        () -> {throw new IllegalArgumentException("Message not found.");}
-                );
+        log.info("message updated - content={}", messageToUpdate.getContent());
+        return messageMapper.toResponse(messageToUpdate);
     }
 
     @Override
+    @Transactional
     public void deleteMessage(UUID messageId) {
+        messageRepository.findById(messageId)
+                .orElseThrow(() -> new MessageException(MessageErrorCode.MESSAGE_NOT_FOUND));
 
-        Message findMessage = messageRepository.findMessageById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found."));
-
-        User author = userRepository.findUserById(findMessage.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
-
-        Channel channel = channelRepository.findChannelById(findMessage.getChannelId())
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found."));
-
-        if(findMessage.getBinaryContents() != null && !findMessage.getBinaryContents().isEmpty()) {
-            List<BinaryContent> binaryContent = binaryContentRepository.findBinaryContentsByMessageId(messageId);
-            removeBinaryContentsOfMessage(binaryContent);
-        }
-
-        removeMessageFromUser(author, messageId);
-        removeMessageFromChannel(channel, messageId);
         removeMessage(messageId);
-
+        log.info("message deleted - id={}", messageId);
     }
 
     private void removeBinaryContentsOfMessage(List<BinaryContent> binaryContents) {
@@ -163,31 +189,17 @@ public class BasicMessageService implements MessageService {
         }
     }
 
-    private void removeMessageFromUser(User author, UUID messageId) {
-        author.getMessages().stream()
-                .filter(myMessage -> myMessage.getId().equals(messageId))
-                .findFirst()
-                .ifPresentOrElse(
-                        author::removeMessage,
-                        () -> { throw new IllegalArgumentException("Message not found."); }
-                );
-    }
-
-    private void removeMessageFromChannel(Channel channel, UUID messageId) {
-        channel.getMessages().stream()
-                .filter(channelMessage -> channelMessage.getId().equals(messageId))
-                .findFirst()
-                .ifPresentOrElse(
-                        channel::removeMessage,
-                        () -> { throw new IllegalArgumentException("Message not found."); }
-                );
-    }
-
     private void removeMessage(UUID messageId) {
-        messageRepository.findMessageById(messageId)
+        messageRepository.findById(messageId)
                 .ifPresentOrElse(
-                        message -> messageRepository.delete(messageId),
-                        () -> { throw new IllegalArgumentException("Message not found."); }
+                        message -> messageRepository.deleteById(messageId),
+                        () -> { throw new MessageException(MessageErrorCode.MESSAGE_NOT_FOUND); }
                 );
+    }
+
+    public boolean isAuthor(UUID authorId, UUID messageId) {
+        return messageRepository.findById(messageId)
+                .map(message -> message.getAuthorId().equals(authorId))
+                .orElseThrow(() -> new MessageException(MessageErrorCode.MESSAGE_NOT_FOUND));
     }
 }

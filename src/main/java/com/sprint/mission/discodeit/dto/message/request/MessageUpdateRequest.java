@@ -5,24 +5,26 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor
 public class MessageUpdateRequest {
 
     @NotBlank(message = "메시지는 null이거나 빈문자열, 공백이면 안됨")
-    private final String content;
+    private String newContent;
 
     @NotNull(message = "채널ID는 null이면 안됨")
-    private final UUID channelId;
+    private UUID channelId;
 
     @NotNull(message = "유저ID는 null이면 안됨")
-    private final UUID userId;
+    private UUID userId;
 
     public MessageUpdateServiceRequest toServiceRequest(UUID messageId) {
         return MessageUpdateServiceRequest.builder()
                 .messageId(messageId)
-                .content(content)
+                .content(newContent)
                 .channelId(channelId)
                 .userId(userId)
                 .build();
