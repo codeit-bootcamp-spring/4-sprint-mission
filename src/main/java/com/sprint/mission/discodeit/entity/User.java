@@ -1,88 +1,64 @@
 package com.sprint.mission.discodeit.entity;
 
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.UUID;
-
+@Entity
+@Table(name = "users")
 @Getter
-public class User implements Serializable {
-    private static final long serialVersionUID = 1L;
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  // JPA를 위한 기본 생성자
+public class User extends BaseUpdatableEntity {
 
-    private UUID id;
-    private UUID profileId;
-    private Instant createdAt;
-    private Instant updatedAt;
-    //
-    private String username;
-    private String email;
-    private String password;
+  @Column(length = 50, nullable = false, unique = true)
+  private String username;
+  @Column(length = 100, nullable = false, unique = true)
+  private String email;
+  @Column(length = 60, nullable = false)
+  private String password;
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JoinColumn(name = "profile_id", columnDefinition = "uuid")
+  private BinaryContent profile;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private Role role = Role.USER;
 
-    public User(String username, String email, String password) {
-        this.id = UUID.randomUUID();
-        this.createdAt = Instant.now();
-        //
-        this.username = username;
-        this.email = email;
-        this.password = password;
+  public User(String username, String email, String password, BinaryContent profile) {
+    this.username = username;
+    this.email = email;
+    this.password = password;
+    this.profile = profile;
+  }
+
+  public void update(String newUsername, String newEmail, String newPassword,
+      BinaryContent newProfile) {
+    if (newUsername != null && !newUsername.equals(this.username)) {
+      this.username = newUsername;
     }
-
-    public void setUpdatedAt() {
-        this.updatedAt = updatedAt;
+    if (newEmail != null && !newEmail.equals(this.email)) {
+      this.email = newEmail;
     }
-
-    public void setUser(String username, String email){
-        if(username != null && !username.equals(this.username)){
-            this.username = username;
-        }else{
-            throw new IllegalArgumentException("입력한 Username : "+ username + "이 기존 값과 같습니다.");
-        }
-
-        if(email != null && !email.equals(this.email)){
-            this.email = email;
-        }else{
-            throw new IllegalArgumentException("입력한 Email : " + email + "이 기존 값과 같습니다.");
-        }
-        setUpdatedAt();
+    if (newPassword != null && !newPassword.equals(this.password)) {
+      this.password = newPassword;
     }
-
-    public void setUsername(String username){
-        if(username == null && username.equals(this.username)){
-            throw new IllegalArgumentException("입력한 값이 null 혹은 중복입니다.");
-        }
-        this.username = username;
-        setUpdatedAt();
+    if (newProfile != null) {
+      this.profile = newProfile;
     }
+  }
 
-    public void setEmail(String email){
-        if(email == null && email.equals(this.email)){
-            throw new IllegalArgumentException("입력한 값이 null 혹은 중복입니다.");
-        }
-        this.email = email;
-        setUpdatedAt();
+  public void updateRole(Role newRole) {
+    if (this.role != newRole) {
+      this.role = newRole;
     }
-
-    public void update(String newUsername, String newEmail, String newPassword) {
-        boolean anyValueUpdated = false;
-        if (newUsername != null && !newUsername.equals(this.username)) {
-            this.username = newUsername;
-            anyValueUpdated = true;
-        }
-        if (newEmail != null && !newEmail.equals(this.email)) {
-            this.email = newEmail;
-            anyValueUpdated = true;
-        }
-        if (newPassword != null && !newPassword.equals(this.password)) {
-            this.password = newPassword;
-            anyValueUpdated = true;
-        }
-
-        if (anyValueUpdated) {
-            this.updatedAt = Instant.now();
-        }
-
-
-    }
+  }
 }
