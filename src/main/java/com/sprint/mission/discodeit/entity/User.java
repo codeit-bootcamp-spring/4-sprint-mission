@@ -1,66 +1,64 @@
 package com.sprint.mission.discodeit.entity;
 
-import com.sprint.mission.discodeit.dto.request.UserRequestDto;
-import com.sprint.mission.discodeit.dto.response.UserDto;
-import com.sprint.mission.discodeit.entity.baseentity.BaseEntity;
+import com.sprint.mission.discodeit.entity.base.BaseUpdatableEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.UUID;
-
+@Entity
+@Table(name = "users")
 @Getter
-public class User extends BaseEntity implements Serializable {
-    private static final long serialVersionUID = 1L;
-    //
-    private String username;
-    private String email;
-    private String password;
-    private UUID profileId;     // BinaryContent
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  // JPA를 위한 기본 생성자
+public class User extends BaseUpdatableEntity {
 
-    public User(String username, String email, String password, UUID profileId) {
-        super();
-        //
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.profileId = profileId;
+  @Column(length = 50, nullable = false, unique = true)
+  private String username;
+  @Column(length = 100, nullable = false, unique = true)
+  private String email;
+  @Column(length = 60, nullable = false)
+  private String password;
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JoinColumn(name = "profile_id", columnDefinition = "uuid")
+  private BinaryContent profile;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private Role role = Role.USER;
+
+  public User(String username, String email, String password, BinaryContent profile) {
+    this.username = username;
+    this.email = email;
+    this.password = password;
+    this.profile = profile;
+  }
+
+  public void update(String newUsername, String newEmail, String newPassword,
+      BinaryContent newProfile) {
+    if (newUsername != null && !newUsername.equals(this.username)) {
+      this.username = newUsername;
     }
-
-    public void update(String newUsername, String newEmail, String newPassword, UUID newProfileId) {
-        System.out.println("# User: update");
-        boolean anyValueUpdated = false;
-        if (newUsername != null && !newUsername.equals(this.username)) {
-            this.username = newUsername;
-            anyValueUpdated = true;
-        }
-        if (newEmail != null && !newEmail.equals(this.email)) {
-            this.email = newEmail;
-            anyValueUpdated = true;
-        }
-        if (newPassword != null && !newPassword.equals(this.password)) {
-            this.password = newPassword;
-            anyValueUpdated = true;
-        }
-        if (newProfileId != null && !newProfileId.equals(this.profileId)) {
-            this.profileId = newProfileId;
-            anyValueUpdated = true;
-        }
-
-        if (anyValueUpdated) {
-            super.setUpdatedAt(Instant.now());
-        }
+    if (newEmail != null && !newEmail.equals(this.email)) {
+      this.email = newEmail;
     }
-
-    public UserDto toDto(Boolean online) {
-        return new UserDto(
-                super.getId(),
-                super.getCreatedAt(),
-                super.getUpdatedAt(),
-                username,
-                email,
-                profileId,
-                online
-        );
+    if (newPassword != null && !newPassword.equals(this.password)) {
+      this.password = newPassword;
     }
+    if (newProfile != null) {
+      this.profile = newProfile;
+    }
+  }
+
+  public void updateRole(Role newRole) {
+    if (this.role != newRole) {
+      this.role = newRole;
+    }
+  }
 }
