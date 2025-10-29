@@ -1,0 +1,94 @@
+name: deploy
+
+on:
+  pull_request:
+    branches: ["main", "cherry-pick-sprint8"]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: 소스 체크 아웃
+        uses: actions/checkout@v3
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: JDK 17 설정
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Gradle 캐시 (선택)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 애플리케이션 빌드
+        run: ./gradlew clean bootJar
+
+      - name: AWS 자격 증명 설정
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: ECR 로그인
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login --username AWS --password-stdin \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: 태그 구성 - 커밋 해시 7자리 + latest
+        id: prep
+        run: |
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "REPO_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/discodeit/discodeit" >> $GITHUB_ENV
+
+      - name: 도커 빌드
+        run: |
+          docker build -t "$REPO_URI:$IMAGE_TAG" -t "$REPO_URI:latest" .
+
+      - name: ECR 푸시
+        run: |
+          docker push "$REPO_URI:$IMAGE_TAG"
+          docker push "$REPO_URI:latest"
+
+      - name: 작업 정의 템플릿 렌더링
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y gettext-base
+          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+          export AWS_REGION=${{ secrets.AWS_REGION }}
+          export IMAGE_TAG=${{ env.IMAGE_TAG }}
+          envsubst < ecs-task-def.json > task-def.rendered.json
+          echo "=== Rendered task def ==="
+          cat task-def.rendered.json
+
+      - name: 작업 정의 업데이트
+        run: |
+          aws ecs register-task-definition \
+            --cli-input-json file://task-def.rendered.json
+
+      - name: ECS 서비스 업데이트
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --service ${{ secrets.ECS_SERVICE }} \
+            --force-new-deployment
+
+      - name: ECS 배포 완료 대기
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --services ${{ secrets.ECS_SERVICE }}
+
+      - name: ECS 배포 상태 확인
+        run: |
+          aws ecs describe-services \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --services ${{ secrets.ECS_SERVICE }} \
+            --query "services[0].deployments"

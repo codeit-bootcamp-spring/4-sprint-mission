@@ -14,15 +14,7 @@ public interface UserService {
     //조회
     UserResponse findUserById(UUID userId);
 
-    UserResponse findDormantUserById(UUID userId);
-
-    UserResponse findDeletedUserById(UUID userId);
-
     List<UserResponse> findUsers();
-
-    List<UserResponse> findDormantUsers();
-
-    List<UserResponse> findDeletedUsers();
 
     //수정
     UserResponse updateUser(UserUpdateServiceRequest request);

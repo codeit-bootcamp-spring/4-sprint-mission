@@ -1,34 +1,31 @@
 package com.sprint.mission.discodeit.dto.message;
 
-import com.sprint.mission.discodeit.entity.Message;
+import com.sprint.mission.discodeit.dto.binarycontent.BinaryContentResponse;
+import com.sprint.mission.discodeit.dto.user.UserResponse;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
+@AllArgsConstructor
 public class MessageResponse {
 
-    private final String content;
+    private final UUID id;
 
-    private final UUID channelId;
+    private Instant createdAt;
 
-    private final UUID userId;
+    private Instant updatedAt;
 
-    private final UUID messageId;
+    private String content;
 
-    public MessageResponse(Message message) {
-        this.messageId = message.getId();
-        this.content = message.getContent();
-        this.channelId = message.getChannelId();
-        this.userId = message.getUserId();
-    }
+    private UUID channelId;
 
-    @Override
-    public String toString() {
-        return "MessageResponse{" +
-                "channelId=" + channelId +
-                ", content='" + content + '\'' +
-                ", userId=" + userId +
-                ", messageId=" + messageId +
-                '}';
-    }
+    private UserResponse author;
+
+    private List<BinaryContentResponse> attachments;
+
 }

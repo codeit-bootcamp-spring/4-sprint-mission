@@ -1,9 +1,11 @@
 package com.sprint.mission.discodeit.dto.readstatus.request;
 
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 
 /**
@@ -11,19 +13,20 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor
 public class ReadStatusUpdateRequest {
 
-    @NotNull(message = "유저 Id는 null이면 안됨")
-    private final UUID userId;
+    @NotNull(message = "읽음 상태가 null 이면 안됨")
+    private Instant newLastReadAt;
 
-    @NotNull(message = "채널 Id는 null이면 안됨")
-    private final UUID channelId;
+    @NotNull(message = "새 알람은 null이면 안됨")
+    private Boolean newNotificationEnabled;
 
     public ReadStatusUpdateServiceRequest toServiceRequest(UUID readStatusId) {
         return ReadStatusUpdateServiceRequest.builder()
+                .newLastReadAt(newLastReadAt)
+                .newNotificationEnabled(newNotificationEnabled)
                 .readStatusId(readStatusId)
-                .userId(userId)
-                .channelId(channelId)
                 .build();
     }
 }

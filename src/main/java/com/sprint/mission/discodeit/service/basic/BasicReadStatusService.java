@@ -1,137 +1,116 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.constant.ChannelErrorCode;
+import com.sprint.mission.discodeit.constant.ReadStatusErrorCode;
+import com.sprint.mission.discodeit.constant.UserErrorCode;
 import com.sprint.mission.discodeit.dto.readstatus.ReadStatusResponse;
 import com.sprint.mission.discodeit.dto.readstatus.request.ReadStatusCreateServiceRequest;
 import com.sprint.mission.discodeit.dto.readstatus.request.ReadStatusUpdateServiceRequest;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.exception.ChannelException;
+import com.sprint.mission.discodeit.exception.ReadStatusException;
+import com.sprint.mission.discodeit.exception.UserException;
+import com.sprint.mission.discodeit.mapper.ReadStatusMapper;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.ReadStatusService;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class BasicReadStatusService implements ReadStatusService {
 
-    @Qualifier("fileReadStatusRepository")
     private final ReadStatusRepository readStatusRepository;
 
-    @Qualifier("fileChannelRepository")
     private final ChannelRepository channelRepository;
 
-    @Qualifier("fileUserRepository")
     private final UserRepository userRepository;
 
+    private final ReadStatusMapper readStatusMapper;
+
     @Override
+    @Transactional
     public ReadStatusResponse createReadStatus(ReadStatusCreateServiceRequest request) {
-        Channel channel = channelRepository.findChannelById(request.getChannelId())
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found."));
+        Channel channel = channelRepository.findById(request.getChannelId())
+                .orElseThrow(() -> new ChannelException(ChannelErrorCode.CHANNEL_NOT_FOUND));
 
-        User user = userRepository.findUserById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        ReadStatus readStatus = request.toEntity();
+        readStatusRepository.findReadStatusByUserIdAndChannelId(request.getUserId(), request.getChannelId())
+                .ifPresent(readStatus -> {throw new ReadStatusException(ReadStatusErrorCode.READ_STATUS_ALREADY_EXIST);});
 
-        channel.addUserReadStatus(readStatus);
-        user.addReadStatus(readStatus);
+        ReadStatus readStatus = readStatusMapper.toEntity(request, user, channel);
 
-        userRepository.save(user);
-        channelRepository.save(channel);
         readStatusRepository.save(readStatus);
 
-        return new ReadStatusResponse(readStatus);
+        return readStatusMapper.toResponse(readStatus);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ReadStatusResponse findReadStatusById(UUID userId) {
-        return readStatusRepository.findReadStatusById(userId)
-                .map(ReadStatusResponse::new)
-                .orElseThrow(() -> new IllegalArgumentException("ReadStatus not found."));
+        return readStatusRepository.findById(userId)
+                .map(readStatusMapper::toResponse)
+                .orElseThrow(() -> new ReadStatusException(ReadStatusErrorCode.READ_STATUS_NOT_FOUND));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ReadStatusResponse findReadStatusByUserIdAndChannelId(UUID userId, UUID channelId) {
         return readStatusRepository.findReadStatusByUserIdAndChannelId(userId, channelId)
-                .map(ReadStatusResponse::new)
-                .orElseThrow(() -> new IllegalArgumentException("ReadStatus not found."));
+                .map(readStatusMapper::toResponse)
+                .orElseThrow(() -> new ReadStatusException(ReadStatusErrorCode.READ_STATUS_NOT_FOUND));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ReadStatusResponse> findAllByUserId(UUID userId) {
         return readStatusRepository.findAllByUserId(userId)
                 .stream()
-                .map(ReadStatusResponse::new)
+                .map(readStatusMapper::toResponse)
                 .toList();
     }
 
     @Override
+    @Transactional
     public ReadStatusResponse updateReadStatus(ReadStatusUpdateServiceRequest request) {
 
-        ReadStatus readStatusToUpdate = readStatusRepository.findReadStatusById(request.getReadStatusId())
-                .orElseThrow(() -> new IllegalArgumentException("ReadStatus not found."));
-
-        Channel channel = channelRepository.findChannelById(request.getChannelId())
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found."));
-
-        User user = userRepository.findUserById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        ReadStatus readStatusToUpdate = readStatusRepository.findById(request.getReadStatusId())
+                .orElseThrow(() -> new ReadStatusException(ReadStatusErrorCode.READ_STATUS_NOT_FOUND));
 
         readStatusToUpdate.updateLastReadAt();
-
-        user.addReadStatus(readStatusToUpdate);
-        channel.addUserReadStatus(readStatusToUpdate);
+        Optional.ofNullable(request.getNewNotificationEnabled()).ifPresent(readStatusToUpdate::updateNotificationEnabled);
 
         readStatusRepository.save(readStatusToUpdate);
-        userRepository.save(user);
-        channelRepository.save(channel);
 
-        return new ReadStatusResponse(readStatusToUpdate);
+        return readStatusMapper.toResponse(readStatusToUpdate);
 
     }
 
     @Override
+    @Transactional
     public void deleteReadStatus(UUID readStatusId) {
-        ReadStatus readStatus = readStatusRepository.findReadStatusById(readStatusId)
-                .orElseThrow(() -> new IllegalArgumentException("ReadStatus not found."));
+        ReadStatus readStatus = readStatusRepository.findById(readStatusId)
+                .orElseThrow(() -> new ReadStatusException(ReadStatusErrorCode.READ_STATUS_NOT_FOUND));
 
-        Channel channel = channelRepository.findChannelById(readStatus.getChannelId())
-                .orElseThrow(() -> new IllegalArgumentException("Channel not found."));
+        Channel channel = channelRepository.findById(readStatus.getChannelId())
+                .orElseThrow(() -> new ChannelException(ChannelErrorCode.CHANNEL_NOT_FOUND));
 
-        User user = userRepository.findUserById(readStatus.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
-
-        removeReadStatusesFromChannel(channel, readStatusId);
-        removeReadStatusesFromUser(user, readStatusId);
+        User user = userRepository.findById(readStatus.getUserId())
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         channelRepository.save(channel);
         userRepository.save(user);
         readStatusRepository.deleteById(readStatusId);
     }
 
-    private void removeReadStatusesFromChannel(Channel channel, UUID readStatusId) {
-        channel.getReadStatuses().stream()
-                .filter(rs -> rs.getId().equals(readStatusId))
-                .findFirst()
-                .ifPresentOrElse(
-                        channel::removeUserReadStatus,
-                        () -> {throw new IllegalArgumentException("ReadStatus not found.");}
-                );
-    }
-
-    private void removeReadStatusesFromUser(User user, UUID readStatusId) {
-        user.getReadStatuses().stream()
-                .filter(rs -> rs.getId().equals(readStatusId))
-                .findFirst()
-                .ifPresentOrElse(
-                        user::removeReadStatus,
-                        () -> {throw new IllegalArgumentException("ReadStatus not found.");}
-                );
-    }
 }

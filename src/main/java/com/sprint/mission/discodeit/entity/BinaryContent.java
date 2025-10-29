@@ -2,35 +2,52 @@ package com.sprint.mission.discodeit.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Instant;
-import java.util.UUID;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-public class BinaryContent extends BaseEntity {
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "binary_contents")
+public class BinaryContent extends BaseUpdatableEntity {
 
-    private final UUID userId;
-    private final UUID messageId;
-    private final byte[] data;
+    @Column(name = "bytes", nullable = false)
+    private byte[] bytes;
 
-    private final Instant createdAt;
+    @Column(name = "content_type", nullable = false)
+    private String contentType;
 
+    @Column(name = "size", nullable = false)
+    private Long size;
+
+    @Column(name = "file_name", nullable = false)
     private String fileName;
-    private FileType fileType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private BinaryContentStatus status = BinaryContentStatus.PROCESSING;
 
     @Builder
     @JsonCreator
-    public BinaryContent(@JsonProperty("userId") UUID userId,
-                         @JsonProperty("messageId") UUID messageId,
+    public BinaryContent(
                          @JsonProperty("fileName") String fileName,
-                         @JsonProperty("fileType") FileType fileType,
-                         @JsonProperty("data") byte[] data) {
-        this.userId = userId;
-        this.messageId = messageId;
-        this.data = data;
-        this.createdAt = Instant.now();
+                         @JsonProperty("contentType") String contentType,
+                         @JsonProperty("size") Long size,
+                         @JsonProperty("data") byte[] bytes) {
+        this.bytes = bytes;
+        this.contentType = contentType;
+        this.size = size;
         this.fileName = fileName;
-        this.fileType = fileType;
+    }
+
+    public void updateStatus(BinaryContentStatus binaryContentStatus) {
+        this.status = binaryContentStatus;
     }
 }
