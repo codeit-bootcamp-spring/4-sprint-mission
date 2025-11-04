@@ -3,10 +3,12 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/discodeit
-    username: discodeit_user
-    password: discodeit1234
+    url: jdbc:postgresql://db:5432/postgres
+    username: postgres
+    password: 614200
   jpa:
+    hibernate:
+      ddl-auto: update  # <-- Change this from 'validate'
     properties:
       hibernate:
         format_sql: true

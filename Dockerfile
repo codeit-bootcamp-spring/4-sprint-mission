@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Gradle Wrapper 파일 먼저 복사
 COPY gradle ./gradle
-COPY gradlew ./gradlew
+COPY gradlew ./
 
 # Gradle 캐시를 위한 의존성 파일 복사
 COPY build.gradle settings.gradle ./
@@ -27,11 +27,12 @@ WORKDIR /app
 
 # 프로젝트 정보를 ENV로 설정
 ENV PROJECT_NAME=discodeit \
-    PROJECT_VERSION=1.2-M8 \
+    PROJECT_VERSION=3.0-M12 \
     JVM_OPTS=""
 
 # 빌드 스테이지에서 jar 파일만 복사
-COPY --from=builder /app/build/libs/${PROJECT_NAME}-${PROJECT_VERSION}.jar ./
+#COPY --from=builder /app/build/libs/${PROJECT_NAME}-${PROJECT_VERSION}.jar ./
+COPY --from=builder /app/build/libs/*.jar ./app.jar
 
 # 80 포트 노출
 EXPOSE 80
