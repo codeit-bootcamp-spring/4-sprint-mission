@@ -1,8 +1,7 @@
 package com.sprint.mission.discodeit.storage.s3;
 
-import com.amazonaws.AmazonServiceException;
 import com.sprint.mission.discodeit.dto.data.BinaryContentDto;
-import com.sprint.mission.discodeit.event.BinaryContentRecoverEvent;
+import com.sprint.mission.discodeit.event.message.S3UploadFailedEvent;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -22,7 +21,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -43,60 +41,61 @@ public class S3BinaryContentStorage implements BinaryContentStorage {
   private final String region;
   private final String bucket;
 
-  private final ApplicationEventPublisher publisher;
-
   @Value("${discodeit.storage.s3.presigned-url-expiration:600}") // 기본값 10분
   private long presignedUrlExpirationSeconds;
+
+  private final ApplicationEventPublisher eventPublisher;
 
   public S3BinaryContentStorage(
       @Value("${discodeit.storage.s3.access-key}") String accessKey,
       @Value("${discodeit.storage.s3.secret-key}") String secretKey,
       @Value("${discodeit.storage.s3.region}") String region,
       @Value("${discodeit.storage.s3.bucket}") String bucket,
-      ApplicationEventPublisher publisher
+      ApplicationEventPublisher eventPublisher
   ) {
     this.accessKey = accessKey;
     this.secretKey = secretKey;
     this.region = region;
     this.bucket = bucket;
-    this.publisher = publisher;
+    this.eventPublisher = eventPublisher;
   }
 
-  // delay of 100ms
+
   @Retryable(
-      retryFor = {S3Exception.class, SdkClientException.class},
-      maxAttempts = 5,
-      backoff = @Backoff(delay = 100))
+      retryFor = S3Exception.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2)
+  )
   @Override
   public UUID put(UUID binaryContentId, byte[] bytes) {
-    log.info("S3에 파일 업로드 시작: binaryContentId={}", binaryContentId);
-
     String key = binaryContentId.toString();
-    S3Client s3Client = getS3Client();
+    try {
+      S3Client s3Client = getS3Client();
 
-    PutObjectRequest request = PutObjectRequest.builder()
-        .bucket(bucket)
-        .key(key)
-        .build();
+      PutObjectRequest request = PutObjectRequest.builder()
+          .bucket(bucket)
+          .key(key)
+          .build();
 
-    s3Client.putObject(request, RequestBody.fromBytes(bytes));
-    log.info("S3에 파일 업로드 성공: {}", key);
+      s3Client.putObject(request, RequestBody.fromBytes(bytes));
+      log.info("S3에 파일 업로드 성공: {}", key);
 
-    return binaryContentId;
+      return binaryContentId;
+    } catch (S3Exception e) {
+      log.error("S3에 파일 업로드 실패: {}", e.getMessage());
+      throw e;
+    }
   }
 
   @Recover
   public UUID recover(S3Exception e, UUID binaryContentId, byte[] bytes) {
-    publisher.publishEvent(new BinaryContentRecoverEvent(this, binaryContentId, e));
-    throw new RuntimeException("S3Exception - AWS S3 파일 업로드 오류");
-  }
+    log.error("S3 업로드 재시도 실패: {}, key={}", e.getMessage(), binaryContentId);
+    eventPublisher.publishEvent(
+        new S3UploadFailedEvent(binaryContentId, e)
+    );
 
-  @Recover
-  public UUID recover(SdkClientException e, UUID binaryContentId, byte[] bytes) {
-    publisher.publishEvent(new BinaryContentRecoverEvent(this, binaryContentId, null));
-    throw new RuntimeException("SdkClientException - AWS S3 파일 업로드 오류");
+    throw new RuntimeException(e);
   }
-
 
   @Override
   public InputStream get(UUID binaryContentId) {
@@ -116,7 +115,6 @@ public class S3BinaryContentStorage implements BinaryContentStorage {
       throw new NoSuchElementException("File with key " + key + " does not exist");
     }
   }
-
 
   private S3Client getS3Client() {
     return S3Client.builder()
