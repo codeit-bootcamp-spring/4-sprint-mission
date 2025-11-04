@@ -11,12 +11,23 @@ import com.sprint.mission.discodeit.security.jwt.JwtLoginSuccessHandler;
 import com.sprint.mission.discodeit.security.jwt.JwtLogoutHandler;
 import com.sprint.mission.discodeit.security.jwt.JwtRegistry;
 import com.sprint.mission.discodeit.security.jwt.JwtTokenProvider;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
@@ -36,6 +47,7 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Configuration
@@ -133,5 +145,23 @@ public class SecurityConfig {
   @Bean
   public JwtRegistry jwtRegistry(JwtTokenProvider jwtTokenProvider) {
     return new InMemoryJwtRegistry(1, jwtTokenProvider);
+  }
+
+  @Component
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public class MdcFilter implements Filter {
+
+    @Override
+    public void doFilter(final ServletRequest servletRequest,
+        final ServletResponse servletResponse,
+        final FilterChain filterChain) throws ServletException, IOException {
+      setMdc((HttpServletRequest) servletRequest);
+      filterChain.doFilter(servletRequest, servletResponse);
+      MDC.clear();
+    }
+
+    private void setMdc(final HttpServletRequest request) {
+      MDC.put("REQUEST_ID", UUID.randomUUID().toString());
+    }
   }
 }

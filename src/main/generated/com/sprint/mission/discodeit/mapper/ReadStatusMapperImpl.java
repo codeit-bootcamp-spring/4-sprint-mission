@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-04T10:29:17+0900",
+    date = "2025-10-24T16:48:20+0900",
     comments = "version: 1.6.3, compiler: javac, environment: Java 17.0.12 (Oracle Corporation)"
 )
 @Component
@@ -27,15 +27,13 @@ public class ReadStatusMapperImpl implements ReadStatusMapper {
         UUID channelId = null;
         UUID id = null;
         Instant lastReadAt = null;
-        boolean notificationEnabled = false;
 
         userId = readStatusUserId( readStatus );
         channelId = readStatusChannelId( readStatus );
         id = readStatus.getId();
         lastReadAt = readStatus.getLastReadAt();
-        notificationEnabled = readStatus.isNotificationEnabled();
 
-        ReadStatusDto readStatusDto = new ReadStatusDto( id, userId, channelId, lastReadAt, notificationEnabled );
+        ReadStatusDto readStatusDto = new ReadStatusDto( id, userId, channelId, lastReadAt );
 
         return readStatusDto;
     }

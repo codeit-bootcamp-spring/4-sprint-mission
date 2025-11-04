@@ -3,38 +3,37 @@ spring:
     name: discodeit
   servlet:
     multipart:
-      maxFileSize: 10MB # 파일 하나의 최대 크기
-      maxRequestSize: 30MB  # 한 번에 최대 업로드 가능 용량
+      maxFileSize: 50MB # 파일 하나의 최대 크기
+      maxRequestSize: 100MB  # 한 번에 최대 업로드 가능 용량
   datasource:
     driver-class-name: org.postgresql.Driver
+  profiles:
+    active:
+      - dev
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-  profiles:
-    active:
-      - dev
   config:
     import: optional:file:.env[.properties]
+  # 캐시 설정
   cache:
+    cache-names: userChannelsCache, userNotificationsCache, userCache
     type: redis
-    cache-names:
-      - channels
-      - notifications
-      - users
     caffeine:
       spec: >
-        maximumSize=100,
+        maximumSize=500,
         expireAfterAccess=600s,
         recordStats
-    redis:
-      enable-statistics: true
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      redis:
+        enable-statistics: true
+    data:
+      redis:
+        host: ${REDIS_HOST:localhost}
+        port: ${REDIS_PORT:6379}
+  # kafka 설정
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -42,16 +41,20 @@ spring:
       group-id: discodeit-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,loggers
+        include: health,info,metrics,loggers, caches
   endpoint:
     health:
       show-details: always
+  metrics:
+    enable:
+      cache: true
   observations:
     annotations:
       enabled: true
@@ -78,14 +81,15 @@ info:
 
 discodeit:
   storage:
-    type: ${STORAGE_TYPE:local}  # local | s3 (기본값: local)
+    type: s3
+    #    type: ${STORAGE_TYPE:local}  # local | s3 (기본값: local)
     local:
       root-path: ${STORAGE_LOCAL_ROOT_PATH:.discodeit/storage}
     s3:
       access-key: ${AWS_S3_ACCESS_KEY}
       secret-key: ${AWS_S3_SECRET_KEY}
       region: ${AWS_S3_REGION}
-      bucket: ${AWS_S3_BUCKET}
+      bucket: ${AWS_S3_REGION}
       presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:600} # (기본값: 10분)
   admin:
     username: ${DISCODEIT_ADMIN_USERNAME}

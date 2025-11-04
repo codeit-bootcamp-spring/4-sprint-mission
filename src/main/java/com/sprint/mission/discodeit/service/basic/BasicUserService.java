@@ -6,7 +6,7 @@ import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.request.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.event.message.BinaryContentCreatedEvent;
+import com.sprint.mission.discodeit.event.BinaryContentCreatedEvent;
 import com.sprint.mission.discodeit.exception.user.UserAlreadyExistsException;
 import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
 import com.sprint.mission.discodeit.mapper.UserMapper;
@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,9 +36,12 @@ public class BasicUserService implements UserService {
   private final UserMapper userMapper;
   private final BinaryContentRepository binaryContentRepository;
   private final PasswordEncoder passwordEncoder;
-  private final ApplicationEventPublisher eventPublisher;
 
-  @CacheEvict(value = "users", key = "'all'")
+  private final ApplicationEventPublisher publisher;
+
+//  private final CacheManager cacheManager;
+
+  @CacheEvict(value = "userCache", allEntries = true)
   @Transactional
   @Override
   public UserDto create(UserCreateRequest userCreateRequest,
@@ -62,11 +66,9 @@ public class BasicUserService implements UserService {
           BinaryContent binaryContent = new BinaryContent(fileName, (long) bytes.length,
               contentType);
           binaryContentRepository.save(binaryContent);
-          eventPublisher.publishEvent(
-              new BinaryContentCreatedEvent(
-                  binaryContent, binaryContent.getCreatedAt(), bytes
-              )
-          );
+
+          publisher.publishEvent(new BinaryContentCreatedEvent(binaryContent.getId(), bytes));
+
           return binaryContent;
         })
         .orElse(null);
@@ -77,6 +79,9 @@ public class BasicUserService implements UserService {
 
     userRepository.save(user);
     log.info("사용자 생성 완료: id={}, username={}", user.getId(), username);
+
+//    cacheManager.getCache("userCache").clear();
+
     return userMapper.toDto(user);
   }
 
@@ -91,7 +96,7 @@ public class BasicUserService implements UserService {
     return userDto;
   }
 
-  @Cacheable(value = "users", key = "'all'", unless = "#result.isEmpty()")
+  @Cacheable("userCache")
   @Transactional(readOnly = true)
   @Override
   public List<UserDto> findAll() {
@@ -104,7 +109,7 @@ public class BasicUserService implements UserService {
     return userDtos;
   }
 
-  @CacheEvict(value = "users", key = "'all'")
+  @CacheEvict(value = "userCache", allEntries = true) // cache
   @PreAuthorize("principal.userDto.id == #userId")
   @Transactional
   @Override
@@ -114,8 +119,7 @@ public class BasicUserService implements UserService {
 
     User user = userRepository.findById(userId)
         .orElseThrow(() -> {
-          UserNotFoundException exception = UserNotFoundException.withId(userId);
-          return exception;
+          return UserNotFoundException.withId(userId);
         });
 
     String newUsername = userUpdateRequest.newUsername();
@@ -138,11 +142,9 @@ public class BasicUserService implements UserService {
           BinaryContent binaryContent = new BinaryContent(fileName, (long) bytes.length,
               contentType);
           binaryContentRepository.save(binaryContent);
-          eventPublisher.publishEvent(
-              new BinaryContentCreatedEvent(
-                  binaryContent, binaryContent.getCreatedAt(), bytes
-              )
-          );
+//          binaryContentStorage.put(binaryContent.getId(), bytes);
+          publisher.publishEvent(new BinaryContentCreatedEvent(binaryContent.getId(), bytes));
+
           return binaryContent;
         })
         .orElse(null);
@@ -153,10 +155,13 @@ public class BasicUserService implements UserService {
     user.update(newUsername, newEmail, encodedPassword, nullableProfile);
 
     log.info("사용자 수정 완료: id={}", userId);
+
+//    cacheManager.getCache("userCache").clear();
+
     return userMapper.toDto(user);
   }
 
-  @CacheEvict(value = "users", key = "'all'")
+  @CacheEvict(value = "userCache", allEntries = true) // cache
   @PreAuthorize("principal.userDto.id == #userId")
   @Transactional
   @Override
@@ -169,5 +174,9 @@ public class BasicUserService implements UserService {
 
     userRepository.deleteById(userId);
     log.info("사용자 삭제 완료: id={}", userId);
+
+//    cacheManager.getCache("userCache").clear();
   }
+
+
 }

@@ -1,5 +1,4 @@
-version: '3.8'
-
+# https://developer.confluent.io/confluent-tutorials/kafka-on-docker/#the-docker-compose-file
 services:
   broker:
     image: apache/kafka:latest

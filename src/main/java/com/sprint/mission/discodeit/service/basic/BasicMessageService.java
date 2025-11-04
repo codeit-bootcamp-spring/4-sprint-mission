@@ -9,8 +9,8 @@ import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.event.message.BinaryContentCreatedEvent;
-import com.sprint.mission.discodeit.event.message.MessageCreatedEvent;
+import com.sprint.mission.discodeit.event.BinaryContentCreatedEvent;
+import com.sprint.mission.discodeit.event.MessageCreatedEvent;
 import com.sprint.mission.discodeit.exception.channel.ChannelNotFoundException;
 import com.sprint.mission.discodeit.exception.message.MessageNotFoundException;
 import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
@@ -21,18 +21,19 @@ import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -45,7 +46,8 @@ public class BasicMessageService implements MessageService {
   private final MessageMapper messageMapper;
   private final BinaryContentRepository binaryContentRepository;
   private final PageResponseMapper pageResponseMapper;
-  private final ApplicationEventPublisher eventPublisher;
+
+  private final ApplicationEventPublisher publisher;
 
   @Transactional
   @Override
@@ -69,11 +71,10 @@ public class BasicMessageService implements MessageService {
           BinaryContent binaryContent = new BinaryContent(fileName, (long) bytes.length,
               contentType);
           binaryContentRepository.save(binaryContent);
-          eventPublisher.publishEvent(
-              new BinaryContentCreatedEvent(
-                  binaryContent, binaryContent.getCreatedAt(), bytes
-              )
-          );
+
+//          binaryContentStorage.put(binaryContent.getId(), bytes);
+          publisher.publishEvent(new BinaryContentCreatedEvent(binaryContent.getId(), bytes));
+
           return binaryContent;
         })
         .toList();
@@ -87,15 +88,12 @@ public class BasicMessageService implements MessageService {
     );
 
     messageRepository.save(message);
-
     log.info("메시지 생성 완료: id={}, channelId={}", message.getId(), channelId);
-    MessageDto dto = messageMapper.toDto(message);
-    eventPublisher.publishEvent(
-        new MessageCreatedEvent(
-            dto, dto.createdAt()
-        )
-    );
-    return dto;
+
+    // 알람을 위한 이벤트 발행
+    publisher.publishEvent(new MessageCreatedEvent(message));
+
+    return messageMapper.toDto(message);
   }
 
   @Transactional(readOnly = true)

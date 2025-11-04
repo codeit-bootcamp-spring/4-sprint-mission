@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.sprint.mission'
-version = '3.0-M12'
+version = '2.2-M11'
 
 java {
     toolchain {
@@ -36,11 +36,6 @@ dependencies {
     implementation 'software.amazon.awssdk:s3:2.31.7'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'com.nimbusds:nimbus-jose-jwt:10.3'
-    implementation 'org.springframework.retry:spring-retry'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
-    implementation 'com.github.ben-manes.caffeine:caffeine'
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     runtimeOnly 'org.postgresql:postgresql'
 
@@ -55,6 +50,26 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // cache
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // retry
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    // s3
+    implementation 'com.amazonaws:aws-java-sdk:1.2.1'
+
+    // kafka
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // redis
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+
 }
 
 tasks.named('test') {
