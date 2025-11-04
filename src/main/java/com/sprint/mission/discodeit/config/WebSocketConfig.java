@@ -1,4 +1,35 @@
 package com.sprint.mission.discodeit.config;
 
-public class WebSocketConfig {
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+@Configuration
+@EnableWebSocketMessageBroker // STOMP 사용 활성화
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry config) {
+    // 서버가 클라이언트로 메시지를 보낼 때 사용하는 prefix (subscribe)
+    config.enableSimpleBroker("/sub");
+    // 클라이언트가 서버로 메시지를 보낼 때 사용하는 prefix (publish)
+    config.setApplicationDestinationPrefixes("/pub");
+  }
+
+  @Override
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
+    // client가 최초로 연결할 websocket endpoint
+    registry.addEndpoint("/ws")
+        .setAllowedOriginPatterns("*") // CORS 허용
+        .withSockJS(); // SockJS fallback
+  }
+
+  @Override
+  public void configureClientInboundChannel(ChannelRegistration registry) {
+//    registry.interceptors(stompChannelInterceptor)
+  }
+
 }
