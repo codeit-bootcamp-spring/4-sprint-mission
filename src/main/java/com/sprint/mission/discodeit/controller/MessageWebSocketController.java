@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.controller;
 
 import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
+import com.sprint.mission.discodeit.service.MessageService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -12,11 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequiredArgsConstructor
 public class MessageWebSocketController {
 
-  private final SimpMessagingTemplate messagingTemplate;
+  private final MessageService messageService;
 
   @MessageMapping("/messages")
   public void sendMessage(MessageCreateRequest message) {
-    UUID channelId = message.channelId();
-    messagingTemplate.convertAndSend("/sub/chat/room/" + channelId, message);
+    messageService.create(message, java.util.Collections.emptyList());
   }
 }

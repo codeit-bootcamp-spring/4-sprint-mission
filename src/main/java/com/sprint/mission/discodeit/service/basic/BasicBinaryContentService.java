@@ -4,16 +4,21 @@ import com.sprint.mission.discodeit.dto.data.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.BinaryContentStatus;
+import com.sprint.mission.discodeit.entity.Notification;
 import com.sprint.mission.discodeit.event.message.BinaryContentCreatedEvent;
 import com.sprint.mission.discodeit.exception.binarycontent.BinaryContentNotFoundException;
 import com.sprint.mission.discodeit.mapper.BinaryContentMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
+import com.sprint.mission.discodeit.security.DiscodeitUserDetails;
 import com.sprint.mission.discodeit.service.BinaryContentService;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,9 @@ public class BasicBinaryContentService implements BinaryContentService {
   private final BinaryContentRepository binaryContentRepository;
   private final BinaryContentMapper binaryContentMapper;
   private final ApplicationEventPublisher eventPublisher;
+
+  private final SseService sseService;
+
 
   @Transactional
   @Override
@@ -92,6 +100,18 @@ public class BasicBinaryContentService implements BinaryContentService {
     BinaryContent binaryContent = binaryContentRepository.findById(binaryContentId)
         .orElseThrow(() -> BinaryContentNotFoundException.withId(binaryContentId));
     binaryContent.updateStatus(status);
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    DiscodeitUserDetails userPrincipal = (DiscodeitUserDetails) authentication.getPrincipal();
+    UUID userId = userPrincipal.getUserDto().id();
+
+    // SSE
+    sseService.send(
+        List.of(userId),
+        "binaryContents.updated",
+        binaryContentMapper.toDto(binaryContent)
+    );
+
     binaryContentRepository.save(binaryContent);
     return binaryContentMapper.toDto(binaryContent);
   }

@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 public class BinaryContentCreatedEvent extends CreatedEvent<BinaryContent> {
 
+
   private final byte[] bytes;
 
   public BinaryContentCreatedEvent(BinaryContent data, Instant createdAt, byte[] bytes) {

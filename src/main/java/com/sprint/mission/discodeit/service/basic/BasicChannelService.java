@@ -14,6 +14,7 @@ import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.security.DiscodeitUserDetails;
 import com.sprint.mission.discodeit.service.ChannelService;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +24,8 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,9 @@ public class BasicChannelService implements ChannelService {
   private final ChannelMapper channelMapper;
   private final CacheManager cacheManager;
 
+  //
+  private final SseService sseService;
+
   @CacheEvict(value = "channels", allEntries = true)
   @PreAuthorize("hasRole('CHANNEL_MANAGER')")
   @Transactional
@@ -52,7 +58,21 @@ public class BasicChannelService implements ChannelService {
 
     channelRepository.save(channel);
     log.info("채널 생성 완료: id={}, name={}", channel.getId(), channel.getName());
-    return channelMapper.toDto(channel);
+
+    ChannelDto channelDto = channelMapper.toDto(channel);
+
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    DiscodeitUserDetails userPrincipal = (DiscodeitUserDetails) authentication.getPrincipal();
+    UUID userId = userPrincipal.getUserDto().id();
+
+    // SSE
+    sseService.send(
+        List.of(userId),
+        "channels.created",
+        channelDto
+    );
+
+    return channelDto;
   }
 
   @Transactional
@@ -68,7 +88,16 @@ public class BasicChannelService implements ChannelService {
     readStatusRepository.saveAll(readStatuses);
     evictCache(request.participantIds());
     log.info("채널 생성 완료: id={}, name={}", channel.getId(), channel.getName());
-    return channelMapper.toDto(channel);
+
+    ChannelDto channelDto = channelMapper.toDto(channel);
+    // SSE
+    sseService.send(
+        request.participantIds(),
+        "channels.created",
+        channelDto
+    );
+
+    return channelDto;
   }
 
   @Transactional(readOnly = true)
@@ -109,7 +138,20 @@ public class BasicChannelService implements ChannelService {
     }
     channel.update(newName, newDescription);
     log.info("채널 수정 완료: id={}, name={}", channelId, channel.getName());
-    return channelMapper.toDto(channel);
+
+    List<UUID> participantIds = readStatusRepository.findAllByChannelIdWithUser(channelId).stream()
+        .map(r -> r.getUser().getId())
+        .toList();
+
+    ChannelDto channelDto = channelMapper.toDto(channel);
+    // SSE
+    sseService.send(
+        participantIds,
+        "channels.updated",
+        channelDto
+    );
+
+    return channelDto;
   }
 
   @CacheEvict(value = "channels", allEntries = true)
@@ -118,15 +160,26 @@ public class BasicChannelService implements ChannelService {
   @Override
   public void delete(UUID channelId) {
     log.debug("채널 삭제 시작: id={}", channelId);
-    if (!channelRepository.existsById(channelId)) {
-      throw ChannelNotFoundException.withId(channelId);
-    }
 
+    Channel deletedChannel = channelRepository.findById(channelId)
+        .orElseThrow(() -> ChannelNotFoundException.withId(channelId));
+
+    List<UUID> participantIds = readStatusRepository.findAllByChannelIdWithUser(channelId).stream()
+        .map(r -> r.getUser().getId())
+        .toList();
+
+    // delete everything
     messageRepository.deleteAllByChannelId(channelId);
     readStatusRepository.deleteAllByChannelId(channelId);
-
     channelRepository.deleteById(channelId);
     log.info("채널 삭제 완료: id={}", channelId);
+
+    // SSE
+    sseService.send(
+        participantIds,
+        "channels.deleted",
+        channelMapper.toDto(deletedChannel)
+    );
   }
 
   private void evictCache(List<UUID> userIds) {

@@ -1,5 +1,6 @@
 package com.sprint.mission.discodeit.service.basic;
 
+import com.sprint.mission.discodeit.dto.data.ChannelDto;
 import com.sprint.mission.discodeit.dto.data.UserDto;
 import com.sprint.mission.discodeit.dto.request.BinaryContentCreateRequest;
 import com.sprint.mission.discodeit.dto.request.UserCreateRequest;
@@ -15,6 +16,7 @@ import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.UserService;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,10 @@ public class BasicUserService implements UserService {
   private final BinaryContentRepository binaryContentRepository;
   private final PasswordEncoder passwordEncoder;
   private final ApplicationEventPublisher eventPublisher;
+
+  //
+  private final SseService sseService;
+  private final EmitterRegistry registry;
 
   @CacheEvict(value = "users", key = "'all'")
   @Transactional
@@ -75,9 +81,20 @@ public class BasicUserService implements UserService {
 
     User user = new User(username, email, encodedPassword, nullableProfile);
 
-    userRepository.save(user);
+    User savedUser = userRepository.save(user);
     log.info("사용자 생성 완료: id={}, username={}", user.getId(), username);
-    return userMapper.toDto(user);
+
+    UserDto userDto = userMapper.toDto(user);
+    Set<UUID> allConnectedUserIds = registry.getAllUserIds();
+
+    // SSE
+    sseService.send(
+        allConnectedUserIds,
+        "users.created",
+        userDto
+    );
+
+    return userDto;
   }
 
   @Transactional(readOnly = true)
@@ -152,8 +169,18 @@ public class BasicUserService implements UserService {
         .orElse(user.getPassword());
     user.update(newUsername, newEmail, encodedPassword, nullableProfile);
 
+    UserDto userDto = userMapper.toDto(user);
+
+    Set<UUID> allConnectedUserIds = registry.getAllUserIds();
+    // SSE
+    sseService.send(
+        allConnectedUserIds,
+        "users.updated",
+        userDto
+    );
+
     log.info("사용자 수정 완료: id={}", userId);
-    return userMapper.toDto(user);
+    return userDto;
   }
 
   @CacheEvict(value = "users", key = "'all'")
@@ -163,11 +190,23 @@ public class BasicUserService implements UserService {
   public void delete(UUID userId) {
     log.debug("사용자 삭제 시작: id={}", userId);
 
-    if (!userRepository.existsById(userId)) {
-      throw UserNotFoundException.withId(userId);
-    }
+    User deletedUser = userRepository.findById(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     userRepository.deleteById(userId);
+    UserDto userDto = userMapper.toDto(deletedUser);
+
+    Set<UUID> allConnectedUserIds = registry.getAllUserIds();
+    registry.removeAll(userId);
+    allConnectedUserIds.remove(userId);
+
+    // SSE
+    sseService.send(
+        allConnectedUserIds,
+        "users.deleted",
+        userDto
+    );
+
     log.info("사용자 삭제 완료: id={}", userId);
   }
 }

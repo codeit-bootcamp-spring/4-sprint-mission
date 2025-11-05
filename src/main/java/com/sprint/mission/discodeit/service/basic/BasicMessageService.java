@@ -90,6 +90,8 @@ public class BasicMessageService implements MessageService {
 
     log.info("메시지 생성 완료: id={}, channelId={}", message.getId(), channelId);
     MessageDto dto = messageMapper.toDto(message);
+
+    // sse
     eventPublisher.publishEvent(
         new MessageCreatedEvent(
             dto, dto.createdAt()

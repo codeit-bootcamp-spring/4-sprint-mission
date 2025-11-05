@@ -2,8 +2,10 @@ package com.sprint.mission.discodeit.event.listener;
 
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.BinaryContentStatus;
+import com.sprint.mission.discodeit.entity.Notification;
 import com.sprint.mission.discodeit.event.message.BinaryContentCreatedEvent;
 import com.sprint.mission.discodeit.service.BinaryContentService;
+import com.sprint.mission.discodeit.service.basic.SseService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +33,13 @@ public class BinaryContentEventListener {
       binaryContentService.updateStatus(
           binaryContent.getId(), BinaryContentStatus.SUCCESS
       );
+
     } catch (RuntimeException e) {
       binaryContentService.updateStatus(
           binaryContent.getId(), BinaryContentStatus.FAIL
       );
     }
+
+
   }
 }

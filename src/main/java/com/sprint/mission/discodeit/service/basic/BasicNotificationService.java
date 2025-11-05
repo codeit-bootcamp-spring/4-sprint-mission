@@ -30,6 +30,8 @@ public class BasicNotificationService implements NotificationService {
   private final NotificationMapper notificationMapper;
   private final CacheManager cacheManager;
 
+  private final SseService sseService;
+
   @Cacheable(value = "notifications", key = "#receiverId", unless = "#result.isEmpty()")
   @PreAuthorize("principal.userDto.id == #receiverId")
   @Override
@@ -73,7 +75,17 @@ public class BasicNotificationService implements NotificationService {
             title,
             content
         )).toList();
-    notificationRepository.saveAll(notifications);
+    List<Notification> notificationsList = notificationRepository.saveAll(notifications);
+
+    // SSE
+    for (Notification notification : notificationsList) {
+      sseService.send(
+          List.of(notification.getReceiverId()),
+          "notifications.created",
+          notificationMapper.toDto(notification)
+      );
+    }
+
     evictNotificationCache(receiverIds);
     log.info("새 알림 생성 완료: receiverIds={}", receiverIds);
   }
