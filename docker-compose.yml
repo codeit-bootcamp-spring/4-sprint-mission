@@ -7,6 +7,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: discodeit
+    # The ports: mappings are only for devs to connect
+    # the local tools directly to the containers
     ports:
       - "8081:8080"
     environment:
@@ -29,19 +31,16 @@ services:
       - DISCODEIT_ADMIN_USERNAME=${DISCODEIT_ADMIN_USERNAME}
       - DISCODEIT_ADMIN_EMAIL=${DISCODEIT_ADMIN_EMAIL}
       - DISCODEIT_ADMIN_PASSWORD=${DISCODEIT_ADMIN_PASSWORD}
+
+      - SERVER_PORT=8080
     depends_on:
       - db
+      - broker
+      - redis
     volumes:
       - binary-content-storage:/app/.discodeit/storage
     networks:
       - discodeit-network
-    healthcheck:
-      test: [ "CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server broker:29092" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
 
   db:
     image: postgres:16-alpine
@@ -65,9 +64,12 @@ services:
     container_name: broker
     ports:
       - 9092:9092
+      # (exteral) used for external debugging
+      # app service uses internal broker:29092 address
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      # internal listener and external (host) listener
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
@@ -82,8 +84,7 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     networks:
-      - discodeit-network  # ADD THIS
-
+      - discodeit-network
 
   # redis
   redis:
@@ -95,7 +96,23 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes
     networks:
-      - discodeit-network  # ADD THIS
+      - discodeit-network
+
+  # nginx
+  nginx:
+    image: nginx
+    container_name: nginx-loadbalancer
+    # computer's localhost:3000 -> nginx container's port 80
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    volumes:
+      # HOST (로컬) : CONTAINER (도커)
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - discodeit-network
 
 volumes:
   postgres-data:
