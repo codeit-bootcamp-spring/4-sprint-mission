@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+// just sends to kafka
 @Slf4j
 @RequiredArgsConstructor
 @Component

@@ -34,8 +34,12 @@ spring:
         recordStats
     redis:
       enable-statistics: true
+
   data:
     redis:
+      # added this
+      repositories:
+        enabled: false
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
   kafka:
@@ -44,7 +48,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
     consumer:
-      group-id: discodeit-group
+      group-id: discodeit-group-${random.uuid} # each instance gets unique id
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

@@ -20,12 +20,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+// kafka listener
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class NotificationRequiredTopicListener {
+
+  private final SimpMessagingTemplate messagingTemplate;
 
   private final NotificationService notificationService;
   private final ReadStatusRepository readStatusRepository;
@@ -46,6 +50,8 @@ public class NotificationRequiredTopicListener {
       MessageDto message = event.getData();
       UUID channelId = message.channelId();
       ChannelDto channel = channelService.find(channelId);
+
+      messagingTemplate.convertAndSend("/sub/channels." + channelId + ".messages", message);
 
       Set<UUID> receiverIds = readStatusRepository.findAllByChannelIdAndNotificationEnabledTrue(
               channelId)

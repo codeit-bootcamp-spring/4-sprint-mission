@@ -2,6 +2,7 @@ package com.sprint.mission.discodeit.config;
 
 import com.sprint.mission.discodeit.entity.Role;
 import com.sprint.mission.discodeit.interceptor.JwtAuthenticationChannelInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -14,9 +15,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker // STOMP 사용 활성화
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-  private JwtAuthenticationChannelInterceptor jwtAuthenticationChannelInterceptor;
+  private final JwtAuthenticationChannelInterceptor jwtAuthenticationChannelInterceptor;
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -36,6 +38,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
+    if (jwtAuthenticationChannelInterceptor == null) {
+      System.out.println("jwtAuthenticationChannelInterceptor IS NULL");
+    }
+
     registration.interceptors(
         // 인증 - authentication 객체 생성 + accessor에 저장
         jwtAuthenticationChannelInterceptor,
