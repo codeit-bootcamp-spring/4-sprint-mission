@@ -1,0 +1,14 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./src/main/resources/static:/usr/share/nginx/html
+    networks:
+      - discodeit-network
+networks:
+  discodeit-network:
+    external: true
