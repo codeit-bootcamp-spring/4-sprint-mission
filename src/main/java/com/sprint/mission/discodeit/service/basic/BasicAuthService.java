@@ -1,43 +1,105 @@
 package com.sprint.mission.discodeit.service.basic;
-import com.sprint.mission.discodeit.dto.AuthService.UserLoginRequestDto;
-import com.sprint.mission.discodeit.dto.AuthService.UserLoginResponseDto;
-import com.sprint.mission.discodeit.entity.User;
-import com.sprint.mission.discodeit.entity.UserStatus;
-import com.sprint.mission.discodeit.mapper.AuthMapper;
-import com.sprint.mission.discodeit.repository.UserRepository;
-import com.sprint.mission.discodeit.repository.UserStatusRepository;
-import com.sprint.mission.discodeit.service.AuthService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import java.util.NoSuchElementException;
 
-@Service
+import com.nimbusds.jose.JOSEException;
+import com.sprint.mission.discodeit.dto.data.JwtInformation;
+import com.sprint.mission.discodeit.dto.data.UserDto;
+import com.sprint.mission.discodeit.dto.request.RoleUpdateRequest;
+import com.sprint.mission.discodeit.entity.Role;
+import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.event.message.RoleUpdatedEvent;
+import com.sprint.mission.discodeit.exception.DiscodeitException;
+import com.sprint.mission.discodeit.exception.ErrorCode;
+import com.sprint.mission.discodeit.exception.user.UserNotFoundException;
+import com.sprint.mission.discodeit.mapper.UserMapper;
+import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.security.DiscodeitUserDetails;
+import com.sprint.mission.discodeit.security.jwt.JwtRegistry;
+import com.sprint.mission.discodeit.security.jwt.JwtTokenProvider;
+import com.sprint.mission.discodeit.service.AuthService;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
 @RequiredArgsConstructor
+@Service
 public class BasicAuthService implements AuthService {
 
-    private final UserRepository userRepository;
-    private final UserStatusRepository userStatusRepository;
-    private final AuthMapper authMapper;
+  private final UserRepository userRepository;
+  private final UserMapper userMapper;
+  private final JwtRegistry jwtRegistry;
+  private final JwtTokenProvider tokenProvider;
+  private final UserDetailsService userDetailsService;
+  private final ApplicationEventPublisher eventPublisher;
 
-    @Override
-    public UserLoginResponseDto login(UserLoginRequestDto userLoginRequestDto) {
+  @PreAuthorize("hasRole('ADMIN')")
+  @Transactional
+  @Override
+  public UserDto updateRole(RoleUpdateRequest request) {
+    return updateRoleInternal(request);
+  }
 
-        // checking if username exists
-        User user = userRepository.findByUsername(userLoginRequestDto.username())
-                .orElseThrow(() -> new NoSuchElementException("Invalid username - username not found!"));
+  @Transactional
+  @Override
+  public UserDto updateRoleInternal(RoleUpdateRequest request) {
+    UUID userId = request.userId();
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
 
-        // checking if pw equals to the pw in the repo
-        if (!user.getPassword().equals(userLoginRequestDto.password())) {
-            throw new IllegalArgumentException("Invalid password!");
-        }
+    Role previousRole = user.getRole();
+    Role newRole = request.newRole();
+    user.updateRole(newRole);
 
-        UserStatus userStatus = userStatusRepository.findByUserId(user.getId())
-            .orElseThrow(() -> new NoSuchElementException("User Status with user id " +  user.getId() + " not found!"));
+    jwtRegistry.invalidateJwtInformationByUserId(userId);
+    eventPublisher.publishEvent(
+        new RoleUpdatedEvent(user.getId(), previousRole, newRole, user.getUpdatedAt())
+    );
 
-        // update userStatus and save
-        userStatus.updateLastActiveTime();
-        userStatusRepository.save(userStatus);
+    return userMapper.toDto(user);
+  }
 
-        return authMapper.toUserLoginResponseDto(user, userStatus);
+  @Override
+  public JwtInformation refreshToken(String refreshToken) {
+    // Validate refresh token
+    if (!tokenProvider.validateRefreshToken(refreshToken)
+        || !jwtRegistry.hasActiveJwtInformationByRefreshToken(refreshToken)) {
+      log.error("Invalid or expired refresh token: {}", refreshToken);
+      throw new DiscodeitException(ErrorCode.INVALID_TOKEN);
     }
+
+    String username = tokenProvider.getUsernameFromToken(refreshToken);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+    if (!(userDetails instanceof DiscodeitUserDetails discodeitUserDetails)) {
+      throw new DiscodeitException(ErrorCode.INVALID_USER_DETAILS);
+    }
+
+    try {
+      String newAccessToken = tokenProvider.generateAccessToken(discodeitUserDetails);
+      String newRefreshToken = tokenProvider.generateRefreshToken(discodeitUserDetails);
+      log.info("Access token refreshed for user: {}", username);
+
+      JwtInformation newJwtInformation = new JwtInformation(
+          discodeitUserDetails.getUserDto(),
+          newAccessToken,
+          newRefreshToken
+      );
+      jwtRegistry.rotateJwtInformation(
+          refreshToken,
+          newJwtInformation
+      );
+
+      return newJwtInformation;
+
+    } catch (JOSEException e) {
+      log.error("Failed to generate new tokens for user: {}", username, e);
+      throw new DiscodeitException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+    }
+  }
 }
