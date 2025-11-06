@@ -1,8 +1,13 @@
 package com.sprint.mission.discodeit.config;
 
+import com.sprint.mission.discodeit.entity.Role;
+import com.sprint.mission.discodeit.interceptor.JwtAuthenticationChannelInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.security.messaging.access.intercept.AuthorizationChannelInterceptor;
+import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
+import org.springframework.security.messaging.context.SecurityContextChannelInterceptor;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -10,6 +15,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker // STOMP 사용 활성화
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+  private JwtAuthenticationChannelInterceptor jwtAuthenticationChannelInterceptor;
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -28,8 +35,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   }
 
   @Override
-  public void configureClientInboundChannel(ChannelRegistration registry) {
-//    registry.interceptors(stompChannelInterceptor)
+  public void configureClientInboundChannel(ChannelRegistration registration) {
+    registration.interceptors(
+        // 인증 - authentication 객체 생성 + accessor에 저장
+        jwtAuthenticationChannelInterceptor,
+        // Context Propagation - authentication 객체를 securityContextHolder에 저장
+        new SecurityContextChannelInterceptor(),
+        // 인가 -
+        authorizationChannelInterceptor()
+    );
+  }
+
+  private AuthorizationChannelInterceptor authorizationChannelInterceptor() {
+    return new AuthorizationChannelInterceptor(
+        MessageMatcherDelegatingAuthorizationManager.builder()
+            .anyMessage().hasRole(Role.USER.name())
+            .build()
+    );
   }
 
 }

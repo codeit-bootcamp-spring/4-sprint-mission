@@ -102,7 +102,7 @@ public class JwtTokenProvider {
     return validateToken(token, refreshTokenVerifier, "refresh");
   }
 
-  private boolean validateToken(String token, JWSVerifier verifier, String expectedType) {
+  public boolean validateToken(String token, JWSVerifier verifier, String expectedType) {
     try {
       SignedJWT signedJWT = SignedJWT.parse(token);
 

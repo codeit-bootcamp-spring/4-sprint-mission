@@ -76,10 +76,16 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/refresh"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/logout"),
+                AntPathRequestMatcher.antMatcher("/stomp"),
                 new NegatedRequestMatcher(AntPathRequestMatcher.antMatcher("/api/**"))
             ).permitAll()
             .anyRequest().authenticated()
         )
+
+//        .httpBasic().disable()
+//        .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+//        .anyRequest().denyAll();
+
         .exceptionHandling(ex -> ex
             .authenticationEntryPoint(new Http403ForbiddenEntryPoint())
             .accessDeniedHandler(new Http403ForbiddenAccessDeniedHandler(objectMapper))
