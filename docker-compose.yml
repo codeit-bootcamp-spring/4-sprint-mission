@@ -1,0 +1,136 @@
+#version: '3.8'
+#
+#services:
+#  app:
+#    image: discodeit:local
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: discodeit
+#    ports:
+#      - "8081:80"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=prod
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/discodeit
+#      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+#      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+#      - STORAGE_TYPE=s3
+#      - STORAGE_LOCAL_ROOT_PATH=.discodeit/storage
+#      - AWS_S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}
+#      - AWS_S3_SECRET_KEY=${AWS_S3_SECRET_KEY}
+#      - AWS_S3_REGION=${AWS_S3_REGION}
+#      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+#      - AWS_S3_PRESIGNED_URL_EXPIRATION=600
+#    depends_on:
+#      - db
+#    volumes:
+#      - binary-content-storage:/app/.discodeit/storage
+#    networks:
+#      - discodeit-network
+#
+#  db:
+#    image: postgres:16-alpine
+#    container_name: discodeit-db
+#    environment:
+#      - POSTGRES_DB=discodeit
+#      - POSTGRES_USER=${POSTGRES_USER}
+#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
+#      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+#    networks:
+#      - discodeit-network
+#
+#volumes:
+#  postgres-data:
+#  binary-content-storage:
+#
+#networks:
+#  discodeit-network:
+#    driver: bridge
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/discodeit
+      SPRING_DATASOURCE_USERNAME: discodeit
+      SPRING_DATASOURCE_PASSWORD: discodeit
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    expose:
+      - "8080"
+    depends_on:
+      - db
+      - redis
+      - kafka
+    networks:
+      - app-net
+
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    environment:
+      POSTGRES_DB: discodeit
+      POSTGRES_USER: discodeit
+      POSTGRES_PASSWORD: discodeit
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-net
+
+  kafka:
+    image: bitnami/kafka:3.8.0
+    container_name: kafka
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+    volumes:
+      - kafka-data:/bitnami/kafka
+    networks:
+      - app-net
+
+networks:
+  app-net:
+
+volumes:
+  db-data:
+  redis-data:
+  kafka-data:
