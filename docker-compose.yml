@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  reverse-proxy:
+    build:
+      context: .                # 루트 전체를 컨텍스트로
+      dockerfile: ./nginx/Dockerfile
+    container_name: discodeit-nginx
+    ports:
+      - "3000:80"               # 호스트 3000 -> Nginx 80
+    depends_on:
+      - backend
+    networks:
+      - discodeit-network
+
+  backend:
+    image: discodeit:local
+    build:
+      context: 0-sprint-mission-s11-v2-base   # 스프링부트 프로젝트 루트
+      dockerfile: Dockerfile                  # 그 폴더 안의 Dockerfile
+    #container_name: discodeit #replies를 쓰기 위해서 이름을 지움
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/discodeit
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=broker:29092
+      - STORAGE_TYPE=s3
+      - STORAGE_LOCAL_ROOT_PATH=.discodeit/storage
+      - AWS_S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}
+      - AWS_S3_SECRET_KEY=${AWS_S3_SECRET_KEY}
+      - AWS_S3_REGION=${AWS_S3_REGION}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - AWS_S3_PRESIGNED_URL_EXPIRATION=600
+      - DISCODEIT_ADMIN_USERNAME=${DISCODEIT_ADMIN_USERNAME}
+      - DISCODEIT_ADMIN_EMAIL=${DISCODEIT_ADMIN_EMAIL}
+      - DISCODEIT_ADMIN_PASSWORD=${DISCODEIT_ADMIN_PASSWORD}
+    depends_on:
+      - db
+      - redis
+      - broker
+    volumes:
+      - binary-content-storage:/app/.discodeit/storage
+    networks:
+      discodeit-network:
+        aliases:
+          - backend
+    deploy:
+      replicas: 2   # backend-1, 2, 3 역할
+      restart_policy:
+        condition: on-failure
+
+
+  db:
+    image: postgres:16-alpine
+    container_name: discodeit-db
+    environment:
+      - POSTGRES_DB=discodeit
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - discodeit-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - discodeit-network
+
+  broker:
+    image: apache/kafka:latest
+    hostname: broker
+    container_name: broker
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: PLAINTEXT://broker:29092,CONTROLLER://broker:29093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    networks:
+      - discodeit-network
+
+volumes:
+  postgres-data:
+  binary-content-storage:
+  redis-data:
+
+networks:
+  discodeit-network:
+    driver: bridge
